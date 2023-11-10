@@ -1,0 +1,13 @@
+slack_sdk==3.23.0
+slack_bolt==1.18.0
+fastapi==0.104.1
+uvicorn==0.23.2
+atlassian-python-api
+langchain
+rlpycairo
+pytesseract
+Pillow 
+reportlab 
+svglib 
+openai
+requests==2.31.0

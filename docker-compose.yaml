@@ -1,0 +1,51 @@
+version: "3.8"
+
+x-common-variables: &common-variables
+  DB_USER: ${DB_USER}
+  DB_PASS: ${DB_PASS}
+  DB_HOST: ${DB_HOST}
+  DB_NAME: ${DB_NAME}
+  DB_PORT: ${DB_PORT:-5432}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN}
+  SLACK_APP_TOKEN: ${SLACK_APP_TOKEN}
+
+volumes:
+  pg_sandbox_data:
+  pg_development_data:
+
+services:
+  db:
+    image: postgres:16.0-bullseye
+    volumes:
+      - ./omo_api/db/init:/docker-entrypoint-initdb.d
+      - "pg_${APP_ENV}_data:/var/lib/postgresql/data"
+    ports:
+      - 5432:5432
+    environment: *common-variables
+
+  server:
+    build: ./omo_api
+    ports:
+      - 8000:80
+    volumes:
+      - ./omo_api:/var/www/omo_api
+    environment:
+      <<: *common-variables
+      PYTHONPATH: "$${PYTHONPATH}:/var/www" # for absolute imports
+      PORT: 8000
+    depends_on:
+      - db
+  
+  websockets:
+    build: ./omo_ws
+    ports:
+      - 8001:80
+    volumes:
+      - ./omo_ws:/var/www/omo_ws
+    environment:
+      <<: *common-variables
+      PYTHONPATH: "$${PYTHONPATH}:/var/www" # for absolute imports
+      PORT: 8001
+    depends_on:
+      - server
