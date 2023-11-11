@@ -9,10 +9,23 @@ x-common-variables: &common-variables
   POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
   SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN}
   SLACK_APP_TOKEN: ${SLACK_APP_TOKEN}
+  OMO_CUSTOMER_NAMESPACE: ${OMO_CUSTOMER_NAMESPACE}
+  ATLASSIAN_SPACE_KEY: ${ATLASSIAN_SPACE_KEY}
+  ATLASSIAN_USERNAME: ${ATLASSIAN_USERNAME}
+  ATLASSIAN_API_TOKEN: ${ATLASSIAN_API_TOKEN}
+  OPENAI_API_KEY: ${OPENAI_API_KEY}
+  CHROMADB_HOST: ${CHROMADB_HOST}
+  CHROMADB_PORT: ${CHROMADB_PORT}
+  CHROMADB_PERSIST_DIR: ${CHROMADB_PERSIST_DIR}
 
 volumes:
   pg_sandbox_data:
   pg_development_data:
+  chroma_index_data:
+
+#networks:
+#  net:
+#    driver: bridge
 
 services:
   db:
@@ -49,3 +62,11 @@ services:
       PORT: 8001
     depends_on:
       - server
+  
+  chromadb:
+    image: chromadb/chroma:0.4.17
+    volumes:
+      - chroma_index_data:/chroma/.chroma/index
+    ports:
+      - 8002:8000
+    
