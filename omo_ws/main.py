@@ -17,6 +17,7 @@ app = FastAPI()
 
 SLACK_BOT_TOKEN = os.environ['SLACK_BOT_TOKEN']
 SLACK_APP_TOKEN = os.environ['SLACK_APP_TOKEN']
+API_HOST = os.environ['API_HOST']
 
 # Initializes app with the bot token and socket mode handler
 bolt_app = App(token=SLACK_BOT_TOKEN)
@@ -32,7 +33,7 @@ def say_hello(message, say):
     question = message['text']
     prompt_response = random.choice(prompt_responses)
     say(f"{prompt_response} Please wait a few moments...")
-    response = requests.get(f'http://omo_server_1/api/v1/answer_question/{question}')
+    response = requests.get(f'http://{API_HOST}/api/v1/answer_question/{question}')
 
     say(response.text)
 
