@@ -10,6 +10,8 @@ x-common-variables: &common-variables
   POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
   SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN}
   SLACK_APP_TOKEN: ${SLACK_APP_TOKEN}
+  #SLACK_CLIENT_ID: ${SLACK_CLIENT_ID}
+  #SLACK_CLIENT_SECRET: ${SLACK_SECRET}
   OMO_CUSTOMER_NAMESPACE: ${OMO_CUSTOMER_NAMESPACE}
   ATLASSIAN_SPACE_KEY: ${ATLASSIAN_SPACE_KEY}
   ATLASSIAN_USERNAME: ${ATLASSIAN_USERNAME}
@@ -22,7 +24,7 @@ x-common-variables: &common-variables
 volumes:
   pg_sandbox_data:
   pg_development_data:
-  chroma_index_data:
+#  chroma_index_data:
 
 #networks:
 #  net:
@@ -40,6 +42,7 @@ services:
 
   server:
     build: ./omo_api
+    platform: linux/amd64
     ports:
       - 8000:80
     volumes:
@@ -53,6 +56,7 @@ services:
   
   websockets:
     build: ./omo_ws
+    platform: linux/amd64
     ports:
       - 8001:80
     volumes:
@@ -64,10 +68,10 @@ services:
     depends_on:
       - server
   
-  chromadb:
-    image: chromadb/chroma:0.4.17
-    volumes:
-      - chroma_index_data:/chroma/.chroma/index
-    ports:
-      - 8002:8000
+  # chromadb:
+  #   image: chromadb/chroma:0.4.17
+  #   volumes:
+  #     - chroma_index_data:/chroma/.chroma/index
+  #   ports:
+  #     - 8002:8000
     
