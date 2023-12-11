@@ -1,21 +1,26 @@
 import os
-import logging
-import chromadb
 import pinecone
-from fastapi import FastAPI
+import logging
 from logging.config import dictConfig
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from langchain import hub
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import Chroma, Pinecone
 from langchain.chat_models import ChatOpenAI
 from langchain.schema.runnable import RunnablePassthrough
+from slack_sdk import WebClient
 from conf.log import log_config
+from routers import googledrive
+from db.connection import Base, engine, session
 
 dictConfig(log_config)
 logger = logging.getLogger(__name__)
 
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 PINECONE_INDEX = os.getenv('PINECONE_INDEX')
+SLACK_CLIENT_ID = os.getenv('SLACK_CLIENT_ID')
+SLACK_CLIENT_SECRET = os.getenv('SLACK_CLIENT_SECRET')
 
 pinecone.init(
     api_key=os.getenv("PINECONE_API_KEY"), 
@@ -23,6 +28,22 @@ pinecone.init(
 )
 
 app = FastAPI()
+app.include_router(googledrive.router)
+
+Base.metadata.create_all(bind=engine)
+
+origins = [
+    "http://localhost:8000",
+    "http://localhost:5173",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST"],
+    allow_headers=["*"],
+)
 
 SLACK_WEBHOOKS = {
     'omoai': {
@@ -52,3 +73,27 @@ async def answer_question(question: str):
     logger.debug(f"Question: {question} = Answer: {answer.content}")
 
     return answer.content
+
+@app.get('/api/v1/slack/oauth2_redirect')
+async def post_install(code: str):
+    logger.debug(f"slack temp auth code received: {code}")
+
+    if code:
+        client = WebClient()
+
+        response = client.oauth_v2_access(
+            client_id=SLACK_CLIENT_ID,
+            client_secret=SLACK_CLIENT_SECRET,
+            code=code,
+        )
+        logger.debug("oauth2 response", response)
+
+        is_enterprise_install = response.get('is_enterprise_install', False)
+    else:
+        pass
+
+    # TODO save to database
+    os.environ["SLACK_BOT_TOKEN"] = response['access_token']
+    
+    message = "Connected to Slack. You may close this page"
+    return message

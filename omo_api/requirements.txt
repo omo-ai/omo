@@ -15,7 +15,11 @@ tiktoken==0.5.1
 python-dotenv==1.0.0
 beautifulsoup4==4.12.2
 sentence-transformers==0.3.0
-o365==2.0.31
 langchain-googledrive==0.0.329
 unstructured==0.11.2
 pinecone-client==2.2.4
+slack_sdk==3.26.1
+psycopg2==2.9.9
+SQLAlchemy==2.0.23
+sqlalchemy-utils==0.41.1
+alembic==1.13.0

@@ -7,7 +7,7 @@ COPY . /var/www/omo_api/
 ENV PYTHONPATH "${PYTHONPATH}:/var/www/"
 
 RUN apt update
-RUN apt install -y tesseract-ocr libcairo2-dev pkg-config
+RUN apt install -y tesseract-ocr libcairo2-dev pkg-config postgresql-client
 
 RUN pip install --no-cache-dir -r /var/www/omo_api/requirements.txt
 
