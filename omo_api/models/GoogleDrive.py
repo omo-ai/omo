@@ -13,6 +13,8 @@ class GoogleDriveObject(BaseModel):
     lastEditedUtc: int  # timestamp in milliseconds since epoch
     url: str            # url to file
     sizeBytes: int      # filesize
+    lastSyncedAt: date | None = None  # date it was last ingested
+    
 
     class Config:
         orm_mode = True

@@ -16,6 +16,7 @@ class GDriveObject(Base):
     last_edited_utc = Column(BigInteger)
     url = Column(String)
     size_bytes = Column(String)
+    last_synced_at = Column(DateTime(timezone=True), nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
