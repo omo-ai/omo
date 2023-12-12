@@ -120,6 +120,9 @@ def process_files(db: Session, files: List[GoogleDriveObject], upsert_files: Lis
     logger.debug(f"...found {len(folder_ids)} folders")
     logger.debug(f"...found {len(file_ids)} files")
 
+    error_folder = 0
+    error_file = 0
+
     # create vector embeddings
     # TODO process documents asynchronously
     if file_ids:
@@ -142,6 +145,7 @@ def process_files(db: Session, files: List[GoogleDriveObject], upsert_files: Lis
                 db.add(file)
                 db.commit()
             except Exception as e:
+                error_file += 1
                 logger.debug(f"** error processing id: {file.id} gdrive_id: {file.gdrive_id}: {e}")
                 continue
 
@@ -161,4 +165,15 @@ def process_files(db: Session, files: List[GoogleDriveObject], upsert_files: Lis
             db.add(folder)
             db.commit()
         except Exception as e:
+            error_folder += 1
             logger.debug(f"** failed to process id: {folder.id} gdrive_id: {folder.gdrive_id}: {e}")
+            continue
+
+    total_errors = error_folder + error_file
+    if error_folder + error_file > 0:
+        msg = {"message": f"{total_errors} files or folders failed to sync."}
+    else:
+        msg = {"message": f"All files synced successfully."}
+
+    return msg
+    
