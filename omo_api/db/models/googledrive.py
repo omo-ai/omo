@@ -5,7 +5,7 @@ from sqlalchemy.orm import relationship
 from ..connection import Base
 
 class GDriveObject(Base):
-    __tablename__ = "gdrive_object"
+    __tablename__ = "gdrive_objects"
 
     id = Column(Integer, primary_key=True, index=True)
     gdrive_id = Column(String,  unique=True, index=True)

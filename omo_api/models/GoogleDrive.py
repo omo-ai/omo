@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 from pydantic import BaseModel
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 
 class GoogleDriveObject(BaseModel):
@@ -13,7 +13,7 @@ class GoogleDriveObject(BaseModel):
     lastEditedUtc: int  # timestamp in milliseconds since epoch
     url: str            # url to file
     sizeBytes: int      # filesize
-    lastSyncedAt: date | None = None  # date it was last ingested
+    lastSyncedAt: Union[date, None] = None  # date it was last ingested
     
 
     class Config:

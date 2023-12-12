@@ -11,8 +11,10 @@ from langchain.chat_models import ChatOpenAI
 from langchain.schema.runnable import RunnablePassthrough
 from slack_sdk import WebClient
 from conf.log import log_config
-from routers import googledrive
+from routers import googledrive, auth
 from db.connection import Base, engine, session
+from db.models.googledrive import * # Necessary for the call to create_all() to create tables
+from db.models.user import *
 
 dictConfig(log_config)
 logger = logging.getLogger(__name__)
@@ -29,6 +31,7 @@ pinecone.init(
 
 app = FastAPI()
 app.include_router(googledrive.router)
+app.include_router(auth.router)
 
 Base.metadata.create_all(bind=engine)
 
