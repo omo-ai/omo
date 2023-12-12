@@ -6,13 +6,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from langchain import hub
 from langchain.embeddings import OpenAIEmbeddings
-from langchain.vectorstores import Chroma, Pinecone
+from langchain.vectorstores import Pinecone
 from langchain.chat_models import ChatOpenAI
 from langchain.schema.runnable import RunnablePassthrough
 from slack_sdk import WebClient
 from conf.log import log_config
-from routers import googledrive, auth
-from db.connection import Base, engine, session
+from routers import googledrive, auth, files
+from db.connection import Base, engine
 from db.models.googledrive import * # Necessary for the call to create_all() to create tables
 from db.models.user import *
 
@@ -32,6 +32,7 @@ pinecone.init(
 app = FastAPI()
 app.include_router(googledrive.router)
 app.include_router(auth.router)
+app.include_router(files.router)
 
 Base.metadata.create_all(bind=engine)
 
