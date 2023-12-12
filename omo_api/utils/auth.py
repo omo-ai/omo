@@ -1,10 +1,9 @@
 import logging
 from datetime import datetime, timedelta
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import MultipleResultsFound
@@ -41,7 +40,10 @@ def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None
 
 def authenticate_user(email: str, password: str, db: Session) -> bool:
 
-    stmt = select(User.email, User.hashed_password).where(User.email == email)
+    stmt = select(User.email, User.hashed_password) \
+            .where(User.email == email) \
+            .where(User.is_active == True)
+
     result = db.execute(stmt)
     user = result.fetchone()
 

@@ -1,7 +1,10 @@
 import os
 import logging
 import pinecone
-from fastapi import Depends, APIRouter
+from datetime import timedelta
+from typing import Annotated
+from fastapi import Depends, APIRouter, status, HTTPException 
+from fastapi.security import OAuth2PasswordRequestForm
 from typing import List, Union
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -14,15 +17,16 @@ from langchain_googledrive.document_loaders import GoogleDriveLoader
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import Pinecone
 from db.models.user import User
-from models.user import UserRegister
-from utils.auth import get_password_hash
+from models.user import UserRegister, Token
+from utils.auth import get_password_hash, authenticate_user, create_access_token
 
-# since environment variable it's a relative to the root of the project, not this file
-os.environ['GOOGLE_ACCOUNT_FILE'] = './routers/google_service_key.json'
+ACCESS_TOKEN_EXPIRE_MINUTES = 60*60*24
 
 logger = logging.getLogger(__name__) 
 
 router = APIRouter()
+
+
 @router.post('/v1/auth/user/register')
 async def register_user(user: UserRegister, db: Session = Depends(get_db)):
     # TODO can probably use get_or_create method here
@@ -53,3 +57,22 @@ async def register_user(user: UserRegister, db: Session = Depends(get_db)):
     msg = {'message': 'Account created.'}
 
     return msg
+
+@router.post('/v1/auth/user/login', response_model=Token)
+async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: Session = Depends(get_db)):
+    logger.debug('form data*****', form_data)
+    user = authenticate_user(form_data.username, form_data.password, db)
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.email}, expires_delta=access_token_expires
+    )
+
+    return {"access_token": access_token, "token_type": "bearer"}

@@ -26,6 +26,7 @@ router = APIRouter()
 async def save_file(files: GoogleDriveObjects,
                     db: Session = Depends(get_db) ):
 
+    logger.debug('ALL FILES', files)
     process_files_q = []
     upsert_files_q = []
     skip_files = []
@@ -73,7 +74,9 @@ async def save_file(files: GoogleDriveObjects,
     
 def process_files(db: Session, files: List[GoogleDriveObject], upsert_files: List[GoogleDriveObject]):
 
-        
+    logger.debug('Processing New Files', files)
+    logger.debug('Processing Existing Files', upsert_files)
+
     folder_ids = []
     file_ids = []
     
@@ -90,7 +93,7 @@ def process_files(db: Session, files: List[GoogleDriveObject], upsert_files: Lis
             'last_synced_at': None,
         }
 
-        logger.debug('adding new file...', file_info)
+        logger.debug('adding new file to db...', file_info)
 
         new_file = GDriveObject(**file_info)
         db.add(new_file)
@@ -127,17 +130,19 @@ def process_files(db: Session, files: List[GoogleDriveObject], upsert_files: Lis
                 Batch processing using the GoogleDriveLoader.file_ids parameter is all or none
                 If one file fails, it all fails. With this approach, if one file fails, it continues
                 """
+                logger.debug(f"trying file id {file.id}")
+                logger.debug(f"gdrive id {file.gdrive_id}")
                 file_loader = GoogleDriveLoader(
-                    file_ids = [file.id], 
+                    file_ids = [file.gdrive_id], 
                 )
                 documents = file_loader.load()
                 docsearch = Pinecone.from_documents(documents, embedding_function, index_name=index_name)
-                logger.debug(f"...added {len(file_ids)} file_ids to {index_name}") 
-                file.lastSyncedAt = func.now() 
+                logger.debug(f"...added {file.gdrive_id} file_ids to {index_name}") 
+                file.last_synced_at = func.now() 
                 db.add(file)
                 db.commit()
             except Exception as e:
-                logger.debug(f"** error processing file {file.id}: {e}")
+                logger.debug(f"** error processing id: {file.id} gdrive_id: {file.gdrive_id}: {e}")
                 continue
 
         
@@ -145,15 +150,15 @@ def process_files(db: Session, files: List[GoogleDriveObject], upsert_files: Lis
         # langchain does not support batch loading multiple folders
         try:
             folder_loader = GoogleDriveLoader(
-                folder_id=folder.id,
+                folder_id=folder.gdrive_id,
                 recursive = True,
             )
             folder_documents = folder_loader.load()
             docsearh_folder = Pinecone.from_documents(folder_documents, embedding_function, index_name=index_name) 
-            logger.debug(f"...added {folder.id} folder_ids to {index_name}" )
-            folder.lastSyncedAt = func.now() 
+            logger.debug(f"...added {folder.gdrive_id} folder_ids to {index_name}" )
+            folder.last_synced_at = func.now() 
 
             db.add(folder)
             db.commit()
         except Exception as e:
-            logger.debug(f"** failed to process folder {folder.id}: {e}")
+            logger.debug(f"** failed to process id: {folder.id} gdrive_id: {folder.gdrive_id}: {e}")
