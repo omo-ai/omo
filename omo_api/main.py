@@ -11,11 +11,15 @@ from langchain.chat_models import ChatOpenAI
 from langchain.schema.runnable import RunnablePassthrough
 from slack_sdk import WebClient
 from omo_api.conf.log import log_config
-from omo_api.routers import auth_router, files_router, googledrive_router
+from omo_api.routers import (
+    auth_router,
+    files_router, 
+    googledrive_router,
+    confluence_router
+)
 from omo_api.db.connection import Base, engine
 
-# from omo_api.db.models.googledrive import * # Necessary for the call to create_all() to create tables
-# from omo_api.db.models.user import *
+# Necessary for the call to create_all() to create tables
 from omo_api.db.models import *
 
 dictConfig(log_config)
@@ -35,6 +39,7 @@ app = FastAPI()
 app.include_router(googledrive_router.router)
 app.include_router(auth_router.router)
 app.include_router(files_router.router)
+app.include_router(confluence_router.router)
 
 Base.metadata.create_all(bind=engine)
 

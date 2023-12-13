@@ -14,6 +14,12 @@ from omo_api.utils.auth import get_current_active_user
 logger = logging.getLogger(__name__) 
 
 router = APIRouter()
+
+@router.post('/v1/confluence/config')
+async def save_credentials(db: Session = Depends(get_db)):
+    logger.debug('saving config')
+    pass
+
 @router.get('/v1/confluence/documents')
 async def get_confluence_documents(db: Session = Depends(get_db)):
     pass
