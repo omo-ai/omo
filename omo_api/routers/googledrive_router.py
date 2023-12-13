@@ -7,9 +7,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.sql import func
-from models.GoogleDrive import GoogleDriveObjects, GoogleDriveObject
-from db.utils import get_db
-from db.models.googledrive import GDriveObject
+from omo_api.models.GoogleDrive import GoogleDriveObjects, GoogleDriveObject
+from omo_api.db.utils import get_db
+from omo_api.db.models.googledrive import GDriveObject
 from langchain_googledrive.document_loaders import GoogleDriveLoader
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import Pinecone

@@ -2,7 +2,7 @@ from sqlalchemy import select, Boolean, Column, ForeignKey, Integer, BigInteger,
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
-from ..connection import Base
+from omo_api.db.connection import Base
 
 class User(Base):
     __tablename__ = "users"

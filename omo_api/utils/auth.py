@@ -8,9 +8,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import MultipleResultsFound
 from typing import Union
-from db.utils import get_db
-from db.models.user import User
-from models.user import TokenData
+from omo_api.db.utils import get_db
+from omo_api.db.models.user import User
+from omo_api.models.user import TokenData
 
 SECRET_KEY = '***REMOVED***'
 ALGORITHM = 'HS256'

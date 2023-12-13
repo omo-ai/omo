@@ -10,11 +10,13 @@ from langchain.vectorstores import Pinecone
 from langchain.chat_models import ChatOpenAI
 from langchain.schema.runnable import RunnablePassthrough
 from slack_sdk import WebClient
-from conf.log import log_config
-from routers import googledrive, auth, files
-from db.connection import Base, engine
-from db.models.googledrive import * # Necessary for the call to create_all() to create tables
-from db.models.user import *
+from omo_api.conf.log import log_config
+from omo_api.routers import auth_router, files_router, googledrive_router
+from omo_api.db.connection import Base, engine
+
+# from omo_api.db.models.googledrive import * # Necessary for the call to create_all() to create tables
+# from omo_api.db.models.user import *
+from omo_api.db.models import *
 
 dictConfig(log_config)
 logger = logging.getLogger(__name__)
@@ -30,9 +32,9 @@ pinecone.init(
 )
 
 app = FastAPI()
-app.include_router(googledrive.router)
-app.include_router(auth.router)
-app.include_router(files.router)
+app.include_router(googledrive_router.router)
+app.include_router(auth_router.router)
+app.include_router(files_router.router)
 
 Base.metadata.create_all(bind=engine)
 

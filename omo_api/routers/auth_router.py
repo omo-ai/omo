@@ -10,15 +10,15 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.sql import func
-from models.GoogleDrive import GoogleDriveObjects, GoogleDriveObject
-from db.utils import get_db
-from db.models.googledrive import GDriveObject
+from omo_api.models.GoogleDrive import GoogleDriveObjects, GoogleDriveObject
+from omo_api.db.utils import get_db
+from omo_api.db.models.googledrive import GDriveObject
 from langchain_googledrive.document_loaders import GoogleDriveLoader
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import Pinecone
-from db.models.user import User
-from models.user import UserRegister, Token
-from utils.auth import get_password_hash, authenticate_user, create_access_token
+from omo_api.db.models.user import User
+from omo_api.models.user import UserRegister, Token
+from omo_api.utils.auth import get_password_hash, authenticate_user, create_access_token
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 60*60*24
 

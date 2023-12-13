@@ -1,4 +1,4 @@
-from .connection import SessionLocal
+from omo_api.db.connection import SessionLocal
 
 def get_or_create(session, model, defaults=None, **kwargs):
     instance = session.query(model).filter_by(**kwargs).one_or_none()

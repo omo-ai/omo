@@ -22,7 +22,7 @@ CHROMADB_PORT = os.getenv('CHROMADB_PORT')
 CUSTOMER_NS = os.getenv('CUSTOMER_NAMESPACE')
 OPENAI_API_KEY = '***REMOVED***' #os.getenv('OPENAI_API_KEY')
 
-chroma_client = chromadb.HttpClient(host='omo_chromadb_1', port=8000)
+#chroma_client = chromadb.HttpClient(host='omo_chromadb_1', port=8000)
 
 loader = ConfluenceLoader(
     url="https://blackarrow.atlassian.net/wiki/",
@@ -32,6 +32,9 @@ loader = ConfluenceLoader(
 
 documents = loader.load(space_key=ATLASSIAN_SPACE_KEY, include_attachments=True, limit=50)
 
-# save to disk
-embedding_function = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
-db = Chroma.from_documents(documents, embedding_function, persist_directory="/chroma_index_data")
+for document in documents:
+    print('document', document)
+
+# # save to disk
+# embedding_function = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
+# db = Chroma.from_documents(documents, embedding_function, persist_directory="/chroma_index_data")
