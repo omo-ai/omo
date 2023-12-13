@@ -9,10 +9,12 @@ class AtlassianConfig(Base):
     __tablename__ = "atlassian_configs"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    username: Mapped[str] = Mapped[str]
-    api_key: Mapped[str] = Mapped[str]
+
+    username: Mapped[str]
+    api_key: Mapped[str]
+
     created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), onupdate=func.now())
+    updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     space_keys: Mapped[List['ConfluenceSpaceKey']] = relationship()
 
@@ -26,17 +28,17 @@ class ConfluenceSpaceKey(Base):
     confluence_objs: Mapped[List['ConfluenceObject']] = relationship()
 
     created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), onupdate=func.now())
+    updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 class ConfluenceObject(Base):
     __tablename__ = "confluence_objects"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     confluence_id: Mapped[int] = Mapped[str]
-    title: Mapped[str] = Mapped[str]
-    source: Mapped[str] = Mapped[str]
+    title: Mapped[str]
+    source: Mapped[str]
 
     space_id: Mapped[int] = mapped_column(ForeignKey("confluence_space_keys.id"))
 
     created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), onupdate=func.now())
+    updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
