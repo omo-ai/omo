@@ -1,40 +1,69 @@
 import os
-import chromadb
-from langchain import hub
+import sys
 from langchain.embeddings import OpenAIEmbeddings
-from langchain.vectorstores import Chroma
 from langchain.document_loaders import ConfluenceLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.embeddings.sentence_transformer import SentenceTransformerEmbeddings, HuggingFaceEmbeddings
-from langchain.chat_models import ChatOpenAI
-from langchain.schema.runnable import RunnablePassthrough
+from langchain.vectorstores import Pinecone
+from omo_api.utils.prompt import query_yes_no
 
 from dotenv import load_dotenv
-from pathlib import Path
 
-#load_dotenv()
+CUSTOMER_KEY='komodo'
+ENVIRONMENT='development'
 
-ATLASSIAN_USERNAME = '***REMOVED***' #os.getenv('ATLASSIAN_USERNAME')
-ATLASSIAN_API_TOKEN = '***REMOVED***' #os.getenv('ATLASSIAN_API_TOKEN')
-ATLASSIAN_SPACE_KEY = 'people' # os.getenv('ATLASSIAN_SPACE_KEY')
-CHROMADB_HOST = os.getenv('CHROMADB_HOST')
-CHROMADB_PORT = os.getenv('CHROMADB_PORT')
-CUSTOMER_NS = os.getenv('CUSTOMER_NAMESPACE')
-OPENAI_API_KEY = '***REMOVED***' #os.getenv('OPENAI_API_KEY')
+ENV_PATH='../../conf/'
 
-#chroma_client = chromadb.HttpClient(host='omo_chromadb_1', port=8000)
+load_dotenv(os.path.join(ENV_PATH, f".env.{ENVIRONMENT}"))
+load_dotenv(os.path.join(ENV_PATH, f"envs/.env.{CUSTOMER_KEY}"))
+
+def get_space_keys():
+    keys = os.getenv('CONFLUENCE_SPACE_KEYS')
+    space_keys = keys.split(',')
+
+    return space_keys
+
+
+spaces = get_space_keys()
+
+if not spaces:
+    print('No spaces set in CONFLUENCE_SPACE_KEYS. Exiting.')
+    sys.exit()
+
+answer = query_yes_no(f"Manually loading for {CUSTOMER_KEY}. Continue?")
+
+if not answer:
+    print('Exiting')
+    sys.exit()
+
 
 loader = ConfluenceLoader(
-    url="https://blackarrow.atlassian.net/wiki/",
-    username=ATLASSIAN_USERNAME,
-    api_key=ATLASSIAN_API_TOKEN
+    url=os.getenv('CONFLUENCE_URL'),
+    username=os.getenv('ATLASSIAN_USERNAME'),
+    api_key=os.getenv('ATLASSIAN_API_TOKEN')
 )
 
-documents = loader.load(space_key=ATLASSIAN_SPACE_KEY, include_attachments=True, limit=50)
+all_docs = []
+for space in spaces:
+    print(f"Loading documents for space {space}")
+    # `space_key`, `page_ids`, `label`, `cql` parameters
+    documents = loader.load(
+        space_key=space,
+        include_attachments=True,
+        limit=50
+    )
+    all_docs.extend(documents)
 
-for document in documents:
-    print('document', document)
 
-# # save to disk
-# embedding_function = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
-# db = Chroma.from_documents(documents, embedding_function, persist_directory="/chroma_index_data")
+for (index, document) in enumerate(all_docs):
+    print(f"{index}: {document.metadata['title']}")
+
+answer = query_yes_no(f"Found {len(all_docs)} documents. Continue?")
+if not answer:
+    print('Exiting.')
+    sys.exit()
+
+index_name = os.getenv('PINECONE_INDEX')
+print(f"Writing to index {index_name}...")
+
+embedding_function = OpenAIEmbeddings(openai_api_key=os.getenv("OPENAI_API_KEY"))
+docsearch = Pinecone.from_documents(all_docs, embedding_function, index_name=index_name)
+print(f"...Done")
