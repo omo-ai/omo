@@ -1,5 +1,9 @@
-drop table confluence_objects;
-drop table confluence_space_keys;
-drop table gdrive_objects;
+drop table confluenceobject;
+drop table confluencespacekey;
+drop table gdriveobject;
+drop table googledriveconfig;
+drop table atlassianconfig;
+drop table pineconeconfig;
+drop table teamconfig;
 drop table users;
-drop table atlassian_configs;
+drop table team;

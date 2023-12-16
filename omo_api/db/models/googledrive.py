@@ -1,22 +1,21 @@
 from sqlalchemy import select, Boolean, Column, ForeignKey, Integer, BigInteger, String, Date, DateTime, Float, Text
 from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 
-from omo_api.db.connection import Base
+from omo_api.db.models.common import CommonMixin, Base, TeamMixin
 
-class GDriveObject(Base):
-    __tablename__ = "gdrive_objects"
+class GoogleDriveConfig(CommonMixin, Base, TeamMixin):
 
-    id = Column(Integer, primary_key=True, index=True)
-    gdrive_id = Column(String,  unique=True, index=True)
-    service_id = Column(String)
-    name = Column(String, index=True)
-    description = Column(String, nullable=True)
-    type = Column(String)
-    last_edited_utc = Column(BigInteger)
-    url = Column(String)
-    size_bytes = Column(String)
-    last_synced_at = Column(DateTime(timezone=True), nullable=True)
+    delegate_email: Mapped[str] = mapped_column(nullable=True)
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+class GDriveObject(CommonMixin, Base):
+
+    gdrive_id: Mapped[str] = mapped_column(unique=True, index=True)
+    service_id: Mapped[str]
+    name: Mapped[str] = mapped_column(index=True)
+    description: Mapped[str] = mapped_column(nullable=True)
+    type: Mapped[str]
+    last_edited_utc: Mapped[int] = mapped_column(BigInteger)
+    url: Mapped[str]
+    size_bytes: Mapped[str]
+    last_synced_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), nullable=True)

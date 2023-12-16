@@ -19,7 +19,8 @@ from omo_api.routers import (
     confluence_router,
     slack_router,
 )
-from omo_api.db.connection import Base, engine
+from omo_api.db.connection import engine
+from omo_api.db.models.common import DeclarativeBase
 
 # Necessary for the call to create_all() to create tables
 from omo_api.db.models import *
