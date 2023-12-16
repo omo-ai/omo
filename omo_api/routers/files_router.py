@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from omo_api.db.utils import get_db
 from omo_api.db.models.user import User
 from omo_api.db.models.googledrive import GDriveObject
-from omo_api.models.GoogleDrive import GoogleDriveObject
+from omo_api.models.google_drive import GoogleDriveObject
 from omo_api.utils.auth import get_current_active_user
 
 logger = logging.getLogger(__name__) 

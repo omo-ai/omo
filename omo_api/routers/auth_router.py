@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.sql import func
-from omo_api.models.GoogleDrive import GoogleDriveObjects, GoogleDriveObject
+from omo_api.models.google_drive import GoogleDriveObjects, GoogleDriveObject
 from omo_api.db.utils import get_db
 from omo_api.db.models.googledrive import GDriveObject
 from langchain_googledrive.document_loaders import GoogleDriveLoader
