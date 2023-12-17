@@ -1,16 +1,18 @@
+from typing import List
 from sqlalchemy import select, Boolean, Column, ForeignKey, Integer, BigInteger, String, Date, DateTime, Float, Text
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
-from omo_api.db.models.common import CommonMixin, Base, TeamMixin
+from omo_api.db.models.common import CommonMixin, Base, TeamConfigMixin
 
-class GoogleDriveConfig(CommonMixin, Base, TeamMixin):
+class GoogleDriveConfig(CommonMixin, Base, TeamConfigMixin):
 
+    gdrive_id: Mapped[str] = mapped_column(unique=True, index=True)
     delegate_email: Mapped[str] = mapped_column(nullable=True)
+    objects: Mapped[List['GDriveObject']] = relationship(back_populates='drive')
 
 class GDriveObject(CommonMixin, Base):
 
-    gdrive_id: Mapped[str] = mapped_column(unique=True, index=True)
     service_id: Mapped[str]
     name: Mapped[str] = mapped_column(index=True)
     description: Mapped[str] = mapped_column(nullable=True)
@@ -19,3 +21,6 @@ class GDriveObject(CommonMixin, Base):
     url: Mapped[str]
     size_bytes: Mapped[str]
     last_synced_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    drive_id: Mapped[int] = mapped_column(ForeignKey('googledriveconfig.id'))
+    drive: Mapped['GoogleDriveConfig'] = relationship(back_populates='objects')

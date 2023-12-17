@@ -1,6 +1,5 @@
 from typing import List
-from sqlalchemy import select, Boolean, Column, ForeignKey, Integer, BigInteger, String, Date, DateTime, Float, Text
-from sqlalchemy.sql import func
+from sqlalchemy import ARRAY, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from omo_api.db.models.common import CommonMixin, Base, TeamMixin
@@ -8,29 +7,33 @@ from omo_api.db.models.confluence import AtlassianConfig
 from omo_api.db.models.googledrive import GoogleDriveConfig
 from omo_api.db.models.pinecone import PineconeConfig
 
-
-
-class Team(Base, CommonMixin):
-    name: Mapped[str]
-    slug: Mapped[str]
-    is_active: Mapped[bool]
-
-    members: Mapped[List['User']] = relationship(back_populates='members')
-    team_config: Mapped[List['TeamConfig']] = relationship(back_populates='team_configs')
-
-class TeamConfig(CommonMixin, Base):
-    
-    atlassian_configs: Mapped[List['AtlassianConfig']] = relationship(back_populates='atlassianconfig')
-    gdrive_configs: Mapped[List['GoogleDriveConfig']] = relationship(back_populates='gdriveconfig')
-    pinecone_configs: Mapped[List['PineconeConfig']] = relationship(back_populates='pineconeconfig')
-
-    slack_team_id: Mapped[str]
-
-    
-class User(CommonMixin, Base, TeamMixin):
+class User(CommonMixin, Base):
     __tablename__ = "users" # avoid collision with postgres schema user
     email: Mapped[str] = mapped_column(unique=True, index=True)
     username: Mapped[str] = mapped_column(unique=True, nullable=True)
     hashed_password: Mapped[str]
     last_login: Mapped[DateTime] = mapped_column(DateTime(timezone=True), nullable=True)
     is_active: Mapped[bool] = mapped_column(default=False)
+
+    slack_user_profile: Mapped['SlackProfile'] = relationship(back_populates='user')
+    team: Mapped['Team'] = relationship(back_populates='users') # user can belong to a team
+
+class Team(Base, CommonMixin):
+    name: Mapped[str]
+    slug: Mapped[str]
+    is_active: Mapped[bool]
+    domains: Mapped[ARRAY] = mapped_column(ARRAY(String), nullable=True)
+
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    users: Mapped[List['User']] = relationship(back_populates='team')
+
+    team_config: Mapped[List['TeamConfig']] = relationship(back_populates='team')
+
+class TeamConfig(CommonMixin, Base):
+    
+    atlassian_configs: Mapped[List['AtlassianConfig']] = relationship(back_populates='team_configs')
+    gdrive_configs: Mapped[List['GoogleDriveConfig']] = relationship(back_populates='team_configs')
+    pinecone_configs: Mapped[List['PineconeConfig']] = relationship(back_populates='team_configs')
+
+    team_id: Mapped[int] = mapped_column(ForeignKey('team.id'))
+    team: Mapped['Team'] = relationship(back_populates='team_config')

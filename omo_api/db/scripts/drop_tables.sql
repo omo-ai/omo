@@ -5,5 +5,6 @@ drop table googledriveconfig;
 drop table atlassianconfig;
 drop table pineconeconfig;
 drop table teamconfig;
+drop table slackprofile;
 drop table users;
 drop table team;
