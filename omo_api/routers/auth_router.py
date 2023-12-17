@@ -16,9 +16,11 @@ from omo_api.db.models.googledrive import GDriveObject
 from langchain_googledrive.document_loaders import GoogleDriveLoader
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import Pinecone
-from omo_api.db.models.user import User
 from omo_api.models.user import UserRegister, Token
+from omo_api.db.models import User, SlackProfile
 from omo_api.utils.auth import get_password_hash, authenticate_user, create_access_token
+from slack_sdk import WebClient
+from slack_sdk.errors import SlackApiError
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 60*60*24
 
@@ -26,6 +28,31 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+SLACK_CLIENT_ID = os.getenv('SLACK_CLIENT_ID')
+SLACK_CLIENT_SECRET = os.getenv('SLACK_CLIENT_SECRET')
+
+def get_oauth_v2_response(temp_auth_code: str, client: WebClient):
+    try:
+        response = client.oauth_v2_access(
+            client_id=SLACK_CLIENT_ID,
+            client_secret=SLACK_CLIENT_SECRET,
+            code=temp_auth_code,
+        )
+        logger.debug("oauth2 response", response)
+
+        return response
+
+    except SlackApiError as e:
+        logger.debug(f"slack api error: {e}")
+        return None
+
+def get_slack_user_info(token: str, slack_user_id: str, client: WebClient):
+    try:
+        info = client.users_profile_get(token=token, user=slack_user_id)
+        return info
+    except SlackApiError as e: 
+        logger.debug(f"slack api error: {e}")
+        return None
 
 @router.post('/v1/auth/user/register')
 async def register_user(user: UserRegister, db: Session = Depends(get_db)):
@@ -41,6 +68,17 @@ async def register_user(user: UserRegister, db: Session = Depends(get_db)):
         logger.debug("register: user already exists")
         return msg
 
+    if user.slackCode:
+        client = WebClient()
+        oauth_v2_response = get_oauth_v2_response(user.slackCode, client)
+
+        if not oauth_v2_response or 'access_token' not in oauth_v2_response:
+            logger.debug('slack token received')
+            return {'error': 'Problem getting Slack access token. Contact support or try again.'}
+
+    slack_token = oauth_v2_response['access_token']
+    authed_user = oauth_v2_response['authed_user']
+
     user_attr = {
         'email': user.email,
         'username': user.username,
@@ -51,6 +89,34 @@ async def register_user(user: UserRegister, db: Session = Depends(get_db)):
     new_user = User(**user_attr)
     db.add(new_user)
     db.commit()
+
+    print('*****', oauth_v2_response)
+    if slack_token and client:
+        info = get_slack_user_info(slack_token, authed_user['id'], client)
+
+        print('***** info', info)
+
+        slack_profile = {
+            'bot_access_token': slack_token,
+            'user_access_token': oauth_v2_response.get('authed_user', {}).get('access_token', None),
+            'user_id': oauth_v2_response.get('authed_user', {}).get('id', None),
+            'team_name': oauth_v2_response.get('team', {}).get('name', None),
+            'team_id': oauth_v2_response.get('team', {}).get('id', None),
+            'enterprise_name': oauth_v2_response['enterprise']['name'] if oauth_v2_response.get('enterprise') else None,
+            'enterprise_id': oauth_v2_response.get['enterprise']['id'] if oauth_v2_response.get('enterprise') else None,
+            'email': info.get('profile').get('email', None),
+            'first_name': info.get('profile').get('first_name', None),
+            'last_name': info.get('profile').get('last_name', None),
+            'title': info.get('profile').get('title', None),
+            'user_id': new_user.id
+        }
+        # if they're joining through slack, create the slack user profile
+        slack_user_profile = SlackProfile(**slack_profile)
+        db.add(slack_user_profile)
+        db.commit()
+        logger.debug('created slack user profile')
+        
+
 
     logger.debug('created new user %s' % user.email)
 

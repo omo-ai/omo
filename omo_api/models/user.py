@@ -11,6 +11,7 @@ class UserRegister(BaseModel):
     username: str
     email: str
     password: str
+    slackCode: str
 
 class User(BaseModel):
     username: str
