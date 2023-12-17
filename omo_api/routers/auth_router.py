@@ -99,7 +99,7 @@ async def register_user(user: UserRegister, db: Session = Depends(get_db)):
         slack_profile = {
             'bot_access_token': slack_token,
             'user_access_token': oauth_v2_response.get('authed_user', {}).get('access_token', None),
-            'user_id': oauth_v2_response.get('authed_user', {}).get('id', None),
+            'slack_user_id': oauth_v2_response.get('authed_user', {}).get('id', None),
             'team_name': oauth_v2_response.get('team', {}).get('name', None),
             'team_id': oauth_v2_response.get('team', {}).get('id', None),
             'enterprise_name': oauth_v2_response['enterprise']['name'] if oauth_v2_response.get('enterprise') else None,

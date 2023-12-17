@@ -3,8 +3,7 @@ from sqlalchemy.orm import relationship, Mapped, mapped_column
 from omo_api.db.models.common import CommonMixin, Base, TeamMixin
 
 class SlackProfile(CommonMixin, Base):
-    user_id: Mapped[str]
-    team_id: Mapped[str]
+    slack_user_id: Mapped[str]
 
     bot_access_token: Mapped[str] = mapped_column(nullable=True)
     user_access_token: Mapped[str] = mapped_column(nullable=True)
@@ -17,7 +16,7 @@ class SlackProfile(CommonMixin, Base):
     last_name: Mapped[str] = mapped_column(nullable=True)
     title: Mapped[str] = mapped_column(nullable=True)
 
-    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=True)
     user: Mapped['User'] = relationship(back_populates='slack_user_profile')
 
 """
