@@ -16,6 +16,7 @@ class User(CommonMixin, Base):
     is_active: Mapped[bool] = mapped_column(default=False)
 
     slack_user_profile: Mapped['SlackProfile'] = relationship(back_populates='user')
+    team_id: Mapped[int] = mapped_column(ForeignKey('team.id'), nullable=True)
     team: Mapped['Team'] = relationship(back_populates='users') # user can belong to a team
 
 class Team(Base, CommonMixin):
@@ -24,9 +25,7 @@ class Team(Base, CommonMixin):
     is_active: Mapped[bool]
     domains: Mapped[ARRAY] = mapped_column(ARRAY(String), nullable=True)
 
-    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
     users: Mapped[List['User']] = relationship(back_populates='team')
-
     team_config: Mapped[List['TeamConfig']] = relationship(back_populates='team')
 
 class TeamConfig(CommonMixin, Base):

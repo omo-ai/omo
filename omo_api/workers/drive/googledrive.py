@@ -7,7 +7,7 @@ from langchain.vectorstores import Pinecone
 from omo_api.loaders import CustomGoogleDriveLoader
 from omo_api.utils.prompt import query_yes_no
 
-CUSTOMER_KEY='komodo'
+CUSTOMER_KEY='alloydigital'
 ENVIRONMENT='development'
 
 ENV_PATH='../../conf/'
