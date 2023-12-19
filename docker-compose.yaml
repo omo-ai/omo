@@ -42,7 +42,9 @@ services:
     environment: *common-variables
 
   server:
-    build: ./omo_api
+    build:
+      context: ./omo_api
+      dockerfile: Dockerfile.local
     platform: linux/amd64
     ports:
       - 8000:80
@@ -56,7 +58,9 @@ services:
       - db
   
   websockets:
-    build: ./omo_ws
+    build:
+      context: ./omo_ws
+      dockerfile: Dockerfile.local
     platform: linux/amd64
     ports:
       - 8001:80
