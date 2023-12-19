@@ -21,7 +21,23 @@ from omo_api.db.models import *
 dictConfig(log_config)
 logger = logging.getLogger(__name__)
 
-app = FastAPI()
+APP_ENV = os.getenv('APP_ENV', 'development')
+
+if APP_ENV == 'production':
+    origins = [
+        "https://api.omo.bot",
+        "https://app.helloomo.ai",
+    ]
+    openapi_url = None # don't publish docs publicly
+else:
+
+    origins = [
+        "http://localhost:8000",
+        "http://localhost:5173",
+    ]
+    openapi_url = '/api/v1/openapi.json' 
+
+app = FastAPI(openapi_url=openapi_url)
 app.include_router(googledrive_router.router)
 app.include_router(auth_router.router)
 app.include_router(files_router.router)
@@ -30,21 +46,6 @@ app.include_router(slack_router.router)
 
 Base.metadata.create_all(bind=engine)
  
-APP_ENV = os.getenv('APP_ENV', 'development')
-
-if APP_ENV == 'production':
-    origins = [
-        "https://api.omo.bot",
-        "https://app.helloomo.ai",
-    ]
-else:
-
-    origins = [
-        "http://localhost:8000",
-        "http://localhost:5173",
-    ]
-
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
