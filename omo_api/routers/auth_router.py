@@ -38,8 +38,6 @@ def get_oauth_v2_response(temp_auth_code: str, client: WebClient):
             client_secret=SLACK_CLIENT_SECRET,
             code=temp_auth_code,
         )
-        logger.debug("oauth2 response", response)
-
         return response
 
     except SlackApiError as e:
@@ -126,7 +124,6 @@ async def register_user(user: UserRegister, db: Session = Depends(get_db)):
 
 @router.post('/v1/auth/user/login', response_model=Token)
 async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: Session = Depends(get_db)):
-    logger.debug('form data*****', form_data)
     user = authenticate_user(form_data.username, form_data.password, db)
 
     if not user:

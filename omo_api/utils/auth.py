@@ -47,8 +47,6 @@ def authenticate_user(email: str, password: str, db: Session) -> bool:
     result = db.execute(stmt)
     user = result.fetchone()
 
-    logger.debug('**user', user)
-
     if not user:
         return False
      

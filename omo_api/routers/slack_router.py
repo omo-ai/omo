@@ -56,33 +56,7 @@ async def receive_message(payload: SlackPayload):
 
         if index_name not in pinecone.list_indexes():
             pinecone.create_index(name=index_name, metric="cosine", dimension=1536)
-        
+
         answer = answer_question(msg)
 
         return answer.content
-
-
-
-@router.get('/api/v1/slack/oauth2_redirect')
-async def post_install(code: str):
-    logger.debug(f"slack temp auth code received: {code}")
-
-    if code:
-        client = WebClient()
-
-        response = client.oauth_v2_access(
-            client_id=SLACK_CLIENT_ID,
-            client_secret=SLACK_CLIENT_SECRET,
-            code=code,
-        )
-        logger.debug("oauth2 response", response)
-
-        is_enterprise_install = response.get('is_enterprise_install', False)
-    else:
-        pass
-
-    # TODO save to database
-    os.environ["SLACK_BOT_TOKEN"] = response['access_token']
-    
-    message = "Connected to Slack. You may close this page"
-    return message
