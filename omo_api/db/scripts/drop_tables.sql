@@ -6,5 +6,6 @@ drop table atlassianconfig;
 drop table pineconeconfig;
 drop table teamconfig;
 drop table slackprofile;
+drop table slackmessage;
 drop table users;
 drop table team;
