@@ -16,6 +16,8 @@ from google.oauth2 import service_account
 from langchain.schema import Document
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import Pinecone
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
 from omo_api.db.models import GDriveObject
 from omo_api.db.connection import session
 from omo_api.utils.prompt import query_yes_no
@@ -210,12 +212,12 @@ request = gdrive_files.list(**param)
 
 documents = []
 files_loaded = 0
-limit = 3
+limit = 20
 while request is not None:
     results = request.execute()
     files = results.get('files')
 
-    while files_loaded < limit:
+    while files and files_loaded < limit:
         file = files.pop(0)
         logger.debug(f"{files_loaded}: Name: {file['name']}")
         logger.debug(f"   Modified: {file['modifiedTime']}")
@@ -227,7 +229,7 @@ while request is not None:
         file["webViewLink"] = link
 
         doc = load_document_from_file(file)
-        # '2023-11-17T19:58:08.529Z'
+        
         # Write doc to database
         drive_obj_kwargs = {
             'drive_id': DRIVE_CONFIG_ID,
@@ -256,8 +258,12 @@ while request is not None:
 
     request = gdrive_files.list_next(request, results)
 
+splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=0)
+split_docs = splitter.split_documents(documents)
 
-for (index, doc) in enumerate(documents):
+
+
+for (index, doc) in enumerate(split_docs):
     logger.debug(f"{index}: {doc.metadata['name']}...")
 
 index_name = os.getenv('PINECONE_INDEX')
@@ -269,16 +275,16 @@ if not answer:
     sys.exit()
 
 pinecone.init(
-    api_key=os.getenv("PINECONE_API_KEY"),  # find at app.pinecone.io
-    environment=os.getenv("PINECONE_ENV"),  # next to api key in console
+    api_key = os.getenv("PINECONE_API_KEY"),  # find at app.pinecone.io
+    environment = os.getenv("PINECONE_ENV"),  # next to api key in console
 )
-index_name = os.getenv('PINECONE_INDEX')
+
 if index_name not in pinecone.list_indexes():
     pinecone.create_index(name=index_name, metric="cosine", dimension=1536)
 # # The OpenAI embedding model `text-embedding-ada-002 uses 1536 dimensions`
 
 embedding_function = OpenAIEmbeddings(openai_api_key=os.getenv("OPENAI_API_KEY"))
-docsearch = Pinecone.from_documents(documents, embedding_function, index_name=index_name)
+docsearch = Pinecone.from_documents(split_docs, embedding_function, index_name=index_name)
 
 logger.debug('Finished adding to index')
 

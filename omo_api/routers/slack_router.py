@@ -51,11 +51,7 @@ async def receive_message(payload: SlackPayload):
 
     # Slack may send other types to the endpoint 
     if payload.type == 'message':
-        index_name = payload.team
         msg = payload.text
-
-        if index_name not in pinecone.list_indexes():
-            pinecone.create_index(name=index_name, metric="cosine", dimension=1536)
 
         answer = answer_question(msg)
 
