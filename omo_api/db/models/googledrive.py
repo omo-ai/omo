@@ -1,5 +1,6 @@
+import datetime
 from typing import List
-from sqlalchemy import select, Boolean, Column, ForeignKey, Integer, BigInteger, String, Date, DateTime, Float, Text
+from sqlalchemy import select, Boolean, Column, DateTime, ForeignKey, Integer, BigInteger, String, Date, DateTime, Float, Text
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
@@ -17,10 +18,12 @@ class GDriveObject(CommonMixin, Base):
     name: Mapped[str] = mapped_column(index=True)
     description: Mapped[str] = mapped_column(nullable=True)
     type: Mapped[str]
-    last_edited_utc: Mapped[int] = mapped_column(BigInteger)
+    # drop this column, add a new one. alembic will complain about inline type changes involving datetime
+    #last_edited_utc: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_edited_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     url: Mapped[str]
     size_bytes: Mapped[str]
-    last_synced_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_synced_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), nullable=True)
 
     drive_id: Mapped[int] = mapped_column(ForeignKey('googledriveconfig.id'))
     drive: Mapped['GoogleDriveConfig'] = relationship(back_populates='objects')
