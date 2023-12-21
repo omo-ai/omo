@@ -1,16 +1,22 @@
+"""
+Load data for a POC for Alloy Digital
+"""
 import os
 import re
 import sys
 import logging
+from datetime import datetime
 import pinecone
-from typing import Dict, List, Any
-from langchain.schema import Document
-from google.oauth2 import service_account
 import googleapiclient.discovery
-from omo_api.utils.prompt import query_yes_no
 from dotenv import load_dotenv 
+from typing import Dict, List, Any
+from google.oauth2 import service_account
+from langchain.schema import Document
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import Pinecone
+from omo_api.db.models import GDriveObject
+from omo_api.db.connection import session
+from omo_api.utils.prompt import query_yes_no
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +27,7 @@ ENV_PATH='../../conf/'
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
 SERVICE_ACCOUNT_FILE = '/var/www/omo_api/conf/envs/alloydigital/alloydigital.json'
 FOLDER_ID = '1VMwza3hvdEU09XCx9XDCxmowudjaTUS9'
+DRIVE_CONFIG_ID = 1 # Their GoogleDriveConfig id
 
 load_dotenv(os.path.join(ENV_PATH, f".env.{ENVIRONMENT}"))
 load_dotenv(os.path.join(ENV_PATH, f"envs/.env.{CUSTOMER_KEY}"))
@@ -200,34 +207,63 @@ gdrive_files = driveservice.files()
 request = gdrive_files.list(**param)
 
 documents = []
-total_files = 0
+files_loaded = 0
+limit = 3
 while request is not None:
     results = request.execute()
     files = results.get('files')
 
-    total_files += len(files)
-    print(f"File count: {total_files}")
-    #for file in files:
-        #link = f"https://docs.google.com/document/d/{file['id']}/edit?usp=drivesdk"
-        #file["webViewLink"] = link
+    while files_loaded < limit:
+        file = files.pop(0)
+        logger.debug(f"{files_loaded}: Name: {file['name']}")
+        logger.debug(f"   Modified: {file['modifiedTime']}")
+        logger.debug(f"   Created: {file['createdTime']}")
+        files_loaded += 1
 
-        #doc = load_document_from_file(file)
-        
-        #documents.append(doc)
-        #print(f"Num docs: {len(documents)}")
+
+        link = f"https://docs.google.com/document/d/{file['id']}/edit?usp=drivesdk"
+        file["webViewLink"] = link
+
+        doc = load_document_from_file(file)
+        # '2023-11-17T19:58:08.529Z'
+        # Write doc to database
+        drive_obj_kwargs = {
+            'drive_id': DRIVE_CONFIG_ID,
+            'service_id': 'docs',
+            'name': doc.metadata['name'],
+            'description': '',
+            'type': 'document',
+            'url': doc.metadata['source'],
+            'size_bytes': 0,
+            'last_edited_at': datetime.fromisoformat(doc.metadata['modifiedTime']),
+            'last_synced_at': None,
+        }
+        drive_obj = GDriveObject(**drive_obj_kwargs) 
+
+        session.add(drive_obj)
+        session.commit()
+
+        logger.debug(f"Commited objected: {doc.metadata['name']}")
+
+        documents.append(doc)
+
+        logger.debug(f"Num docs: {len(documents)}")
+
+    if files_loaded >= limit:
+        break
 
     request = gdrive_files.list_next(request, results)
 
 
 for (index, doc) in enumerate(documents):
-    print(f"{index}: {doc.metadata['name']}...")
+    logger.debug(f"{index}: {doc.metadata['name']}...")
 
 index_name = os.getenv('PINECONE_INDEX')
 
 answer = query_yes_no(f"Start loading into index {index_name}. Continue?")
 
 if not answer:
-    print('Exiting.')
+    logger.debug('Exiting.')
     sys.exit()
 
 pinecone.init(
@@ -242,12 +278,13 @@ if index_name not in pinecone.list_indexes():
 embedding_function = OpenAIEmbeddings(openai_api_key=os.getenv("OPENAI_API_KEY"))
 docsearch = Pinecone.from_documents(documents, embedding_function, index_name=index_name)
 
+logger.debug('Finished adding to index')
 
 folder_kwargs ={
     'service_id': 'docs',
     'name': 'Tactiq Transcripts',
     'description': '',
-    'type': 'folder',
+    'type': 'folder', # document
     'last_edited_utc': 0,
     'url': '',
     'size_bytes': 0,
