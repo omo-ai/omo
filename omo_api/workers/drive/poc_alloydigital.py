@@ -1,5 +1,7 @@
 """
 Load data for a POC for Alloy Digital
+This script was created because a Google service account was added / shared
+directly to a folder
 """
 import os
 import re
