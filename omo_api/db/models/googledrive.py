@@ -15,11 +15,10 @@ class GoogleDriveConfig(CommonMixin, Base, TeamConfigMixin):
 class GDriveObject(CommonMixin, Base):
 
     service_id: Mapped[str]
+    object_id: Mapped[str] = mapped_column(index=True, server_default='BACKFILL')
     name: Mapped[str] = mapped_column(index=True)
     description: Mapped[str] = mapped_column(nullable=True)
     type: Mapped[str]
-    # drop this column, add a new one. alembic will complain about inline type changes involving datetime
-    #last_edited_utc: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     last_edited_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     url: Mapped[str]
     size_bytes: Mapped[str]

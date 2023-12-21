@@ -232,6 +232,7 @@ while request is not None:
         
         # Write doc to database
         drive_obj_kwargs = {
+            'object_id': doc.metadata['id'],
             'drive_id': DRIVE_CONFIG_ID,
             'service_id': 'docs',
             'name': doc.metadata['name'],
