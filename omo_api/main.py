@@ -1,10 +1,10 @@
 import os
 import logging
 from logging.config import dictConfig
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware # TODO
+from starlette.background import BackgroundTask
+from starlette.types import Message
 from omo_api.conf.log import log_config
 from omo_api.routers import (
     auth_router,
@@ -35,21 +35,9 @@ else:
         "http://localhost:8000",
         "http://localhost:5173",
     ]
-    openapi_url = '/api/v1/openapi.json' 
+    openapi_url = '/api/v1/openapi.json'
 
 app = FastAPI(openapi_url=openapi_url)
-app.include_router(googledrive_router.router)
-app.include_router(auth_router.router)
-app.include_router(files_router.router)
-app.include_router(confluence_router.router)
-app.include_router(slack_router.router)
-
-
-
-#### LOGGING MIDDLEWARE ####
-from fastapi import Request, Response
-from starlette.background import BackgroundTask
-from starlette.types import Message
 
 def log_info(req_body, res_body):
     logging.info(req_body)
@@ -74,6 +62,11 @@ async def LogMiddleware(request: Request, call_next):
     return Response(content=res_body, status_code=response.status_code, 
         headers=dict(response.headers), media_type=response.media_type, background=task)
 
+app.include_router(googledrive_router.router)
+app.include_router(auth_router.router)
+app.include_router(files_router.router)
+app.include_router(confluence_router.router)
+app.include_router(slack_router.router)
 
 
 Base.metadata.create_all(bind=engine)
@@ -85,13 +78,6 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
-
-SLACK_WEBHOOKS = {
-    'omoai': {
-        'hook_url': 'https://hooks.slack.com/services/TEAM_ID/B067CPYU8TW/3ZYuK7PRpPMrqbAeIsDGxNUc',
-        'description': 'Posts to OmoAI app channel'
-    }
-}
 
 @app.get("/")
 async def root():

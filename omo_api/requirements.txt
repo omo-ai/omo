@@ -18,6 +18,7 @@ langchain-googledrive==0.0.329
 unstructured==0.11.2
 pinecone-client==2.2.4
 slack_sdk==3.26.1
+slack_bolt==1.18.0
 psycopg2-binary==2.9.9
 SQLAlchemy==2.0.23
 sqlalchemy-utils==0.41.1

@@ -64,7 +64,7 @@ services:
   websockets:
     build:
       context: ./omo_ws
-      dockerfile: Dockerfile.local
+      dockerfile: Dockerfile
     platform: linux/amd64
     ports:
       - 8001:80
@@ -77,10 +77,3 @@ services:
     depends_on:
       - server
   
-  # chromadb:
-  #   image: chromadb/chroma:0.4.17
-  #   volumes:
-  #     - chroma_index_data:/chroma/.chroma/index
-  #   ports:
-  #     - 8002:8000
-    
