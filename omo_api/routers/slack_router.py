@@ -8,7 +8,8 @@ from langchain.chat_models import ChatOpenAI
 from langchain.schema.runnable import RunnablePassthrough
 from slack_sdk import WebClient
 from fastapi import APIRouter
-from omo_api.models.slack import SlackPayload
+from omo_api.models.slack import SlackMessagePayload
+from typing import Union
 
 logger = logging.getLogger(__name__)
 
@@ -43,16 +44,18 @@ async def answer_question(question: str):
 
 
 @router.post('/api/v1/slack/receive_message')
-async def receive_message(payload: SlackPayload):
+async def receive_message(payload: SlackMessagePayload):
     """
     Endpoint that slack will post messages to
     """
-    logger.debug(f"message: {payload.text}")
 
     # Slack may send other types to the endpoint 
-    if payload.type == 'message':
-        msg = payload.text
+    if payload.type == 'url_verification' and payload.challenge:
+        return payload.challenge
 
-        answer = answer_question(msg)
+    if payload.event.type == 'message':
+        msg = payload.event.text
 
-        return answer.content
+        answer = await answer_question(msg)
+
+        return answer
