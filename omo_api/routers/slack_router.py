@@ -1,6 +1,7 @@
 import os
 import pinecone
 import json
+import random
 import logging
 from langchain import hub
 from langchain.embeddings import OpenAIEmbeddings
@@ -10,8 +11,11 @@ from langchain.schema.runnable import RunnablePassthrough
 from slack_sdk import WebClient
 from fastapi import APIRouter, Request
 from omo_api.models.slack import SlackMessagePayload
-from slack_bolt.async_app import AsyncApp
-from slack_bolt.adapter.fastapi.async_handler import AsyncSlackRequestHandler
+from slack_bolt import App
+from slack_bolt.adapter.fastapi import SlackRequestHandler
+from slack_bolt.oauth.oauth_settings import OAuthSettings
+from slack_sdk.oauth.installation_store import FileInstallationStore
+from slack_sdk.oauth.state_store import FileOAuthStateStore
 
 logger = logging.getLogger(__name__)
 
@@ -26,37 +30,64 @@ pinecone.init(
     environment=os.getenv("PINECONE_ENV"), 
 )
 
-bolt_app = AsyncApp()
-bolt_app_handler = AsyncSlackRequestHandler(bolt_app)
+oauth_settings = OAuthSettings(
+    client_id=SLACK_CLIENT_ID,
+    client_secret=SLACK_CLIENT_SECRET,
+    scopes=["channels:read", "groups:read", "chat:write"],
+    installation_store=FileInstallationStore(base_dir="./data/installations"),
+    state_store=FileOAuthStateStore(expiration_seconds=600, base_dir="./data/states")
+)
 
+bolt_app = App(
+    signing_secret=SLACK_SIGNING_SECRET,
+    oauth_settings=oauth_settings
+)
+bolt_app_handler = SlackRequestHandler(bolt_app)
 router = APIRouter()
+
+@router.get("/slack/install")
+async def install(req: Request):
+    """
+    Visit $API_HOST/slack/install in a browser to directly install slack
+    """
+    return await bolt_app_handler.handle(req)
+
+@router.get("/slack/oauth_redirect")
+async def oauth_redirect(req: Request):
+    return await bolt_app_handler.handle(req)
 
 @router.post("/api/v1/slack/message")
 async def endpoint(req: Request):
     return await bolt_app_handler.handle(req)
 
 @bolt_app.event("message")
-async def handle_message(body, say, logger):
-    # prompt_responses = [
-    #     "Getting the answer for you!",
-    #     "I'm on it!",
-    #     "Good question! Let me see."
-    # ]
+def handle_message(body, say, logger):
+    if 'type' in body:
+        event_type = body['type']
 
-    # question = message['text']
-    # prompt_response = random.choice(prompt_responses)
-    # say(f"{prompt_response} Please wait a few moments...")
-    # response = requests.get(f'http://{API_HOST}/api/v1/answer_question/{question}')
+    if event_type == 'url_verification':
+        say(body['challenge'])
 
-    logger.debug(f"Challenge body: {body}")
-    # say(response.text)
-    payload = json.loads(body)
-    say(payload['challenge'])
+    if event_type == 'event_callback':
+        message = SlackMessagePayload(**body)
+        
+        say(show_prompt())
+        answer = answer_question(message.event.text)
+        say(answer)
+
+def show_prompt():
+    prompt_responses = [
+            "Getting the answer for you!",
+            "I'm on it!",
+            "Good question! Let me see."
+        ]
+    prompt_response = random.choice(prompt_responses)
+    return f"{prompt_response} Please wait a few moments..."
 
 
+#@router.get('/api/v1/answer_question/{question}') #TODO make an endpoint for this for the websocket app to send requests to
 
-@router.get('/api/v1/answer_question/{question}')
-async def answer_question(question: str):
+def answer_question(question: str):
     embedding_function = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
     docsearch = Pinecone.from_existing_index(PINECONE_INDEX, embedding_function)
     retriever = docsearch.as_retriever()
@@ -71,23 +102,3 @@ async def answer_question(question: str):
     logger.debug(f"Question: {question} = Answer: {answer.content}")
 
     return answer.content
-
-
-
-
-# @router.post('/api/v1/slack/receive_message')
-# async def receive_message(payload: SlackMessagePayload):
-#     """
-#     Endpoint that slack will post messages to
-#     """
-
-#     # Slack may send other types to the endpoint 
-#     if payload.type == 'url_verification' and payload.challenge:
-#         return payload.challenge
-
-#     if payload.event.type == 'message':
-#         msg = payload.event.text
-
-#         answer = await answer_question(msg)
-
-#         return answer
