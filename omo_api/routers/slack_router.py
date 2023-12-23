@@ -30,10 +30,19 @@ pinecone.init(
     environment=os.getenv("PINECONE_ENV"), 
 )
 
+# These need to align with the Slack events we're receiving
+oauth_required_scopes = [
+    "channels:read",
+    "groups:read",
+    "chat:write",
+    "app_mentions:read",
+    "reactions:read"
+]
+
 oauth_settings = OAuthSettings(
     client_id=SLACK_CLIENT_ID,
     client_secret=SLACK_CLIENT_SECRET,
-    scopes=["channels:read", "groups:read", "chat:write"],
+    scopes=oauth_required_scopes,
     installation_store=FileInstallationStore(base_dir="/mnt/efs/slack/installations"),
     state_store=FileOAuthStateStore(expiration_seconds=600, base_dir="/mnt/efs/slack/states")
 )
