@@ -34,8 +34,8 @@ oauth_settings = OAuthSettings(
     client_id=SLACK_CLIENT_ID,
     client_secret=SLACK_CLIENT_SECRET,
     scopes=["channels:read", "groups:read", "chat:write"],
-    installation_store=FileInstallationStore(base_dir="./data/installations"),
-    state_store=FileOAuthStateStore(expiration_seconds=600, base_dir="./data/states")
+    installation_store=FileInstallationStore(base_dir="/mnt/efs/slack/installations"),
+    state_store=FileOAuthStateStore(expiration_seconds=600, base_dir="/mnt/efs/slack/states")
 )
 
 bolt_app = App(
