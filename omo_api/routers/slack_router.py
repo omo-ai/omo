@@ -84,6 +84,15 @@ def handle_message(body, say, logger):
         answer = answer_question(message.event.text)
         say(answer)
 
+@bolt_app.event("app_mention")
+def handle_app_mention(body, say):
+    message = SlackMessagePayload(**body)
+    
+    say(show_prompt())
+    answer = answer_question(message.event.text)
+    say(answer)
+
+
 def show_prompt():
     prompt_responses = [
             "Getting the answer for you!",
