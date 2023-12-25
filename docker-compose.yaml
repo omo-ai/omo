@@ -1,51 +1,27 @@
 version: "3.8"
 
-x-common-variables: &common-variables
-  API_HOST: ${API_HOST}
-  DB_USER: ${DB_USER}
-  DB_PASS: ${DB_PASS}
-  DB_HOST: ${DB_HOST}
-  DB_NAME: ${DB_NAME}
-  DB_PORT: ${DB_PORT:-5432}
-  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-  SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN}
-  SLACK_APP_TOKEN: ${SLACK_APP_TOKEN}
-  SLACK_CLIENT_ID: ${SLACK_CLIENT_ID}
-  SLACK_CLIENT_SECRET: ${SLACK_CLIENT_SECRET}
-  SLACK_SIGNING_SECRET: ${SLACK_SIGNING_SECRET}
-  OMO_CUSTOMER_NAMESPACE: ${OMO_CUSTOMER_NAMESPACE}
-  CONFLUENCE_SPACE_KEYS: ${CONFLUENCE_SPACE_KEYS}
-  ATLASSIAN_USERNAME: ${ATLASSIAN_USERNAME}
-  ATLASSIAN_API_TOKEN: ${ATLASSIAN_API_TOKEN}
-  CONFLUENCE_URL: ${CONFLUENCE_URL}
-  OPENAI_API_KEY: ${OPENAI_API_KEY}
-  PINECONE_INDEX: ${PINECONE_INDEX}
-  PINECONE_API_KEY: ${PINECONE_API_KEY}
-  PINECONE_ENV: ${PINECONE_ENV}
-  GOOGLE_ACCOUNT_FILE: ${GOOGLE_ACCOUNT_FILE}
-  GOOGLE_DELEGATE_EMAIL: ${GOOGLE_DELEGATE_EMAIL}
-
-
 volumes:
   pg_sandbox_data:
   pg_development_data:
-#  chroma_index_data:
-
-#networks:
-#  net:
-#    driver: bridge
 
 services:
   db:
     image: postgres:16.0-bullseye
+    hostname: omo_db_1
+    container_name: omo_db_1
     volumes:
       - ./omo_api/db/init:/docker-entrypoint-initdb.d
       - "pg_${APP_ENV}_data:/var/lib/postgresql/data"
     ports:
       - 5432:5432
-    environment: *common-variables
+    env_file:
+      - ./omo_api/conf/envs/.env.development
+    environment:
+      APP_ENV: development
 
   server:
+    hostname: omo_server_1
+    container_name: omo_server_1
     build:
       context: ./omo_api
       dockerfile: Dockerfile.local
@@ -54,14 +30,17 @@ services:
       - 8000:80
     volumes:
       - ./omo_api:/var/www/omo_api
+    env_file:
+      - ./omo_api/conf/envs/.env.development
     environment:
-      <<: *common-variables
       PYTHONPATH: "$${PYTHONPATH}:/var/www" # for absolute imports
       PORT: 8000
     depends_on:
       - db
   
   websockets:
+    hostname: omo_ws_1
+    container_name: omo_ws_1
     build:
       context: ./omo_ws
       dockerfile: Dockerfile
@@ -70,8 +49,9 @@ services:
       - 8001:80
     volumes:
       - ./omo_ws:/var/www/omo_ws
+    env_file:
+      - ./omo_ws/conf/.env.development
     environment:
-      <<: *common-variables
       PYTHONPATH: "$${PYTHONPATH}:/var/www" # for absolute imports
       PORT: 8001
     depends_on:
