@@ -20,7 +20,7 @@ from typing import Dict, List, Optional, Union
 #  'user': 'USER_ID'}
 
 
-# Sample Events API Payload
+# Sample Events API Payload message event
 # {
 #     "token": "abc123",
 #     "team_id": "TEAM_ID",
@@ -71,6 +71,61 @@ from typing import Dict, List, Optional, Union
 #     "event_context": "4-eyJldCI6Im1lc3NhZ2UiLCJ0aWQiOiJUMDY1TFBLMlkxSCIsImFpZCI6IkEwNjZWUThFUFY1IiwiY2lkIjoiQzA2N0hIMUJaTTMifQ"
 # }
 
+
+# Sample app_mention event
+# {
+#     "token": "abc123",
+#     "team_id": "TEAM_ID",
+#     "api_app_id": "API_APP_ID",
+#     "event": {
+#         "client_msg_id": "35870E4D-9257-4C08-A31A-0C9F540EF869",
+#         "type": "app_mention",
+#         "text": "<@USER_ID2> hello",
+#         "user": "USER_ID",
+#         "ts": "1703553410.763499",
+#         "blocks": [
+#             {
+#                 "type": "rich_text",
+#                 "block_id": "C0u85",
+#                 "elements": [
+#                     {
+#                         "type": "rich_text_section",
+#                         "elements": [
+#                             {
+#                                 "type": "user",
+#                                 "user_id": "USER_ID2"
+#                             },
+#                             {
+#                                 "type": "text",
+#                                 "text": " hello"
+#                             }
+#                         ]
+#                     }
+#                 ]
+#             }
+#         ],
+#         "team": "TEAM_ID",
+#         "channel": "CHANNEL_ID",
+#         "event_ts": "1703553410.763499"
+#     },
+#     "type": "event_callback",
+#     "event_id": "Ev06BCJYT3M4",
+#     "event_time": 1703553410,
+#     "authorizations": [
+#         {
+#             "enterprise_id": null,
+#             "team_id": "TEAM_ID",
+#             "user_id": "USER_ID2",
+#             "is_bot": true,
+#             "is_enterprise_install": false
+#         }
+#     ],
+#     "is_ext_shared_channel": false,
+#     "event_context": "4-eyJldCI6ImFwcF9tZW50aW9uIiwidGlkIjoiVDA2NUxQSzJZMUgiLCJhaWQiOiJBMDY2VlE4RVBWNSIsImNpZCI6IkMwNjdISDFCWk0zIn0"
+# }
+#event -> channel_type
+#  field required (type=value_error.missing)
+
 # Sample URL Verification Payload
 # {
 #     "token": "token",
@@ -89,7 +144,7 @@ class SlackMessageEventPayload(BaseModel):
     team: str
     channel: str
     event_ts: str
-    channel_type: str
+    channel_type: Optional[str]
 
 """
 Note: Slack can send two different types of payloads to us

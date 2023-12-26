@@ -1,6 +1,6 @@
 import os
+import re
 import pinecone
-import json
 import random
 import logging
 from langchain import hub
@@ -8,7 +8,6 @@ from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import Pinecone
 from langchain.chat_models import ChatOpenAI
 from langchain.schema.runnable import RunnablePassthrough
-from slack_sdk import WebClient
 from fastapi import APIRouter, Request
 from omo_api.models.slack import SlackMessagePayload
 from slack_bolt import App
@@ -89,16 +88,32 @@ def handle_app_mention(body, say):
     message = SlackMessagePayload(**body)
     
     say(show_prompt())
-    answer = answer_question(message.event.text)
+    answer = answer_question(preprocess_message(message.event.text))
     say(answer)
 
+def preprocess_message(message: str) -> str:
+    """
+    Strip out strings that make Omo give a weird response
+    - hello <@USER_ID2>
+    - <@USER_ID2> hello
+    """
+    try:
+        username_pattern = '<@USER_ID2>' # strip out the `OmoAI` username from the message before querying
+        message = re.sub(username_pattern, '', message).strip()
+    except:
+        pass
 
-def show_prompt():
+    return message
+
+def postprocess_message(message: str) -> str:
+    pass
+
+def show_prompt() -> str:
     prompt_responses = [
-            "Getting the answer for you!",
-            "I'm on it!",
-            "Good question! Let me see."
-        ]
+        "Getting the answer for you!",
+        "I'm on it!",
+         "Looking into it!"
+    ]
     prompt_response = random.choice(prompt_responses)
     return f"{prompt_response} Please wait a few moments..."
 

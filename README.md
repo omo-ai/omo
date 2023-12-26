@@ -18,4 +18,9 @@ docker tag omo_api:latest 187613313731.dkr.ecr.us-west-2.amazonaws.com/omo_api:l
 docker push 187613313731.dkr.ecr.us-west-2.amazonaws.com/omo_api:latest-amd64
 ```
 
+## Deploying the Docker image
+```
+kubectl rollout restart deployment omo-api
+```
+
 ## Troubleshooting
