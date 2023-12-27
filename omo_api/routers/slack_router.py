@@ -91,6 +91,12 @@ def handle_app_mention(body, say):
     answer = answer_question(preprocess_message(message.event.text))
     say(answer)
 
+# TODO
+@bolt_app.command("/omo")
+def handle_some_command(ack, body, logger):
+    ack()
+    logger.info(body)
+
 def preprocess_message(message: str) -> str:
     """
     Strip out strings that make Omo give a weird response
