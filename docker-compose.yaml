@@ -32,6 +32,7 @@ services:
       - ./omo_api:/var/www/omo_api
     env_file:
       - ./omo_api/conf/envs/.env.development
+      - "./omo_api/conf/envs/${CUSTOMER_ENV}/.env"
     environment:
       PYTHONPATH: "$${PYTHONPATH}:/var/www" # for absolute imports
       PORT: 8000
@@ -41,6 +42,8 @@ services:
   websockets:
     hostname: omo_ws_1
     container_name: omo_ws_1
+    profiles:
+      - donotstart # comment out if you want to start this service
     build:
       context: ./omo_ws
       dockerfile: Dockerfile
@@ -49,8 +52,9 @@ services:
       - 8001:80
     volumes:
       - ./omo_ws:/var/www/omo_ws
+      - ./omo_api:/var/www/omo_api
     env_file:
-      - ./omo_ws/conf/.env.development
+      - ./omo_ws/conf/envs/.env.development
     environment:
       PYTHONPATH: "$${PYTHONPATH}:/var/www" # for absolute imports
       PORT: 8001

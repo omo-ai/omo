@@ -1,8 +1,8 @@
 ## Starting the API
 
-```
-APP_ENV=development docker compose --env-file omo_api/conf/envs/{CUSTOMER_KEY}.env.local up
-```
+`APP_ENV=development CUSTOMER_ENV=some_customer_key docker compose up`
+
+will include the customer-specific environment variabes under `./omo_api/conf/envs/some_customer_key/.env`
 
 
 ## Building the Docker images
