@@ -24,3 +24,9 @@ kubectl rollout restart deployment omo-api
 ```
 
 ## Troubleshooting
+
+Open Issue: https://github.com/slackapi/bolt-python/issues/1006
+
+## Pinecone Limitations
+
+Does not support `score_threshold`: https://github.com/langchain-ai/langchain/discussions/4669

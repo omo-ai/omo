@@ -72,16 +72,24 @@ def handle_message(body, say, logger):
         message = SlackMessagePayload(**body)
         
         say(show_prompt())
-        answer = answer_question(message.event.text)
-        say(answer)
+
+        preprocessed_msg = preprocess_message(message.event.text)
+        answer = answer_question(preprocessed_msg)
+        postprocessed_msg = postprocess_message(answer)
+
+        say(postprocessed_msg)
 
 @bolt_app.event("app_mention")
 def handle_app_mention(body, say):
     message = SlackMessagePayload(**body)
     
     say(show_prompt())
-    answer = answer_question(preprocess_message(message.event.text))
-    say(answer)
+
+    preprocessed_msg = preprocess_message(message.event.text)
+    answer = answer_question(preprocessed_msg)
+    postprocessed_msg = postprocess_message(answer)
+
+    say(postprocessed_msg)
 
 # TODO
 @bolt_app.command("/omo")
