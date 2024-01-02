@@ -25,6 +25,7 @@ class Team(Base, CommonMixin):
     is_active: Mapped[bool]
     domains: Mapped[ARRAY] = mapped_column(ARRAY(String), nullable=True)
 
+    slack_team_id: Mapped[str] = mapped_column(nullable=True)
     users: Mapped[List['User']] = relationship(back_populates='team')
     team_config: Mapped[List['TeamConfig']] = relationship(back_populates='team')
 
