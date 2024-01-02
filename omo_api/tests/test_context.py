@@ -1,12 +1,14 @@
 import os
 import re
 import json
+import requests
 from time import time, sleep
 
 import pytest
+from typing import Annotated
+from fastapi import APIRouter, Request, Depends
 from slack_sdk.signature import SignatureVerifier
 from slack_sdk.web import WebClient
-
 from slack_bolt import App, BoltRequest, Say
 from omo_api.tests.mock_web_api_server import (
     setup_mock_web_api_server,
@@ -14,16 +16,12 @@ from omo_api.tests.mock_web_api_server import (
     assert_auth_test_count,
 )
 from omo_api.tests.utils import remove_os_env_temporarily, restore_os_env
-from omo_api.routers.qa import (
-    answer_question,
-    preprocess_message,
-    postprocess_message,
-)
+from omo_api.routers.qa import postprocess_message
 
-
-class TestEvents:
+class TestContext:
     signing_secret = os.getenv('SLACK_SIGNING_SECRET') 
     valid_token = os.getenv('SLACK_BOT_TOKEN')
+    api_host = os.getenv('API_HOST')
     mock_api_server_base_url = "http://localhost:8888"
     signature_verifier = SignatureVerifier(signing_secret)
     web_client = WebClient(
@@ -55,7 +53,7 @@ class TestEvents:
     def test_mock_server_is_running(self):
         resp = self.web_client.api_test()
         assert resp != None
-
+    
     valid_message_body = {
         "token": "abc123",
         "team_id": "TEAM_ID",
@@ -105,30 +103,7 @@ class TestEvents:
         "is_ext_shared_channel": False,
         "event_context": "4-eyJldCI6Im1lc3NhZ2UiLCJ0aWQiOiJUMDY1TFBLMlkxSCIsImFpZCI6IkEwNjZWUThFUFY1IiwiY2lkIjoiQzA2N0hIMUJaTTMifQ"
     }
-    mock_langchain_answer = {
-        'documents': [
-            {'id': '327681',
-            'source': 'https://blackarrow.atlassian.net/wiki/spaces/people/pages/327681/Paid+Parental+Leave+Policy',
-            'title': 'Paid Parental Leave Policy'},
-            {'id': '327681',
-            'source': 'https://blackarrow.atlassian.net/wiki/spaces/people/pages/327681/Paid+Parental+Leave+Policy',
-            'title': 'Paid Parental Leave Policy'},
-            {'id': '327681',
-            'source': 'https://blackarrow.atlassian.net/wiki/spaces/people/pages/327681/Paid+Parental+Leave+Policy',
-            'title': 'Paid Parental Leave Policy'},
-            {'id': '327681',
-            'source': 'https://blackarrow.atlassian.net/wiki/spaces/people/pages/327681/Paid+Parental+Leave+Policy',
-            'title': 'Paid Parental Leave Policy'}
-        ],
-        'answer': "The parental leave policy provides up to 12 weeks of paid leave per birth, adoption, or placement of a child. The leave is compensated at 100 percent of the employee's regular pay and is paid on a biweekly basis. The leave must be taken within a 12-month period following the birth, adoption, or placement of the child. Employees must meet certain criteria, such as giving birth, being a spouse or committed partner of a woman who has given birth, or adopting a child."
-    }
-    @pytest.mark.skip(reason="dedupe has been deprecated")
-    def test_dedupe_answer(self):
-        deduped = dedupe_sources(self.mock_langchain_answer['documents'])
-        assert len(deduped) == 1
-
-    @pytest.mark.skip(reason="dedupe has been deprecated") 
-    def test_message(self):
+    def test_customer_context(self):
         app = App(client=self.web_client, signing_secret=self.signing_secret)
 
         @app.event('message')
@@ -140,16 +115,10 @@ class TestEvents:
             #TODO we should actually call answer_question instead of 
             # using a mock response. Doing so will lead to an exception
             # due to RunnableParralel
-            sources = dedupe_sources(self.mock_langchain_answer['documents'])
-
-            postprocessed_msg = postprocess_message(
-                {
-                    'answer': self.mock_langchain_answer['answer'],
-                    'sources': sources 
-                }
-            )
-            self.valid_message_body['event']['blocks'] == postprocess_message
-            say(postprocessed_msg)
+            answer = requests.post(f"{self.api_host}/api/v1/slack/answer", json=body)
+            print('*******', answer)
+            #answer = postprocess_message(answer)
+            #say(answer)
 
 
         timestamp, body = str(int(time())), json.dumps(self.valid_message_body)
@@ -161,3 +130,5 @@ class TestEvents:
         assert_auth_test_count(self, 1)
         sleep(1)  # wait a bit after auto ack()
         assert self.mock_received_requests["/chat.postMessage"] == 1
+
+        answer = requests.post('/api/v1/slack/answer')

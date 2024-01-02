@@ -27,7 +27,7 @@ class Team(Base, CommonMixin):
 
     slack_team_id: Mapped[str] = mapped_column(nullable=True)
     users: Mapped[List['User']] = relationship(back_populates='team')
-    team_config: Mapped[List['TeamConfig']] = relationship(back_populates='team')
+    team_config: Mapped['TeamConfig'] = relationship(back_populates='team')
 
 class TeamConfig(CommonMixin, Base):
     
