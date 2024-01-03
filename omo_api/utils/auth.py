@@ -7,11 +7,16 @@ from passlib.context import CryptContext
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import MultipleResultsFound
+import botocore 
+import botocore.session 
+from botocore.exceptions import ClientError
+from aws_secretsmanager_caching import SecretCache, SecretCacheConfig 
 from typing import Union
 from omo_api.db.utils import get_db
 from omo_api.db.models.user import User
 from omo_api.models.user import TokenData
 
+# TODO store and retrieve from secrets manager
 SECRET_KEY = '***REMOVED***'
 ALGORITHM = 'HS256'
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="v1/accounts/token")
@@ -105,3 +110,18 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
         raise HTTPException(status_code=400, detail="Inactive user")
     #logger.debug('get_active_current_user', current_user.email)
     return current_user
+
+
+def get_aws_secret(secret_name: str, region: str='us-west-2'):
+    secret = None
+    client = botocore.session.get_session().create_client('secretsmanager', region_name=region)
+    try:
+        cache_config = SecretCacheConfig()
+        cache = SecretCache( config = cache_config, client = client)
+        secret = cache.get_secret_string(secret_name)
+    except ClientError as e:
+        # For a list of exceptions thrown, see
+        logger.debug(f"Error getting secret: {e}")
+        # https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
+        raise e
+    return secret

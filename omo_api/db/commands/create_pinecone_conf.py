@@ -13,12 +13,11 @@ logger = logging.getLogger(__name__)
 secret_json = json.loads(get_aws_secret('prod/omo-api/alloydigital/pinecone'))
 
 pinecone_kwargs = {
-    'index_name': 'alloydigital-default',
+    'index_name': 'starter_index',
     'environment': 'gcp-starter',
-    'api_key': 'prod/omo-api/alloydigital/pinecone',
-    'team_config_id': 1, # alloydigital
+    'api_key': '/aws/secretsmanager/path',
+    'team_config_id': 2, # alloydigital
 }
-
 
 for key in pinecone_kwargs:
     print(f"{key}: {pinecone_kwargs[key]}")
