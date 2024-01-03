@@ -1,16 +1,18 @@
-from enum import Enum
+import json
 import logging
+from enum import Enum
 from typing import Annotated
 from fastapi import Request, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from omo_api.models.slack import SlackMessagePayload
-from omo_api.db.utils import get_db
 from omo_api.db.utils import get_or_create, get_db
 from omo_api.db.models.slack import SlackProfile
 from omo_api.db.models.user import User, Team, TeamConfig
 from omo_api.db.models.pinecone import PineconeConfig
+from omo_api.utils.auth import get_aws_secret
+
 
 logger = logging.getLogger(__name__)
 
@@ -135,7 +137,9 @@ async def get_slack_user_context(request: Request,
             pc_config = team.team_config.pinecone_configs[0]
 
             context['omo_pinecone_index'] = pc_config.index_name
-            context['omo_pinecone_api_key'] = pc_config.api_key
+
+            secret = json.loads(get_aws_secret(pc_config.api_key))
+            context['omo_pinecone_api_key'] = secret['api_key']
         else:
             logger.debug('Creating new Pinecone conf for team_config')
             pc_kwargs = {
