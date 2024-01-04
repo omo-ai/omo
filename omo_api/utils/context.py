@@ -201,13 +201,10 @@ class SlackUserContext:
 
         return user
 
-async def get_slack_user_context(request: Request,
+async def get_slack_user_context(body: SlackMessagePayload,
                                  db: Annotated[Session, Depends(get_db)]):
 
-    request_body = await request.json()
-    slack_payload = SlackMessagePayload(**request_body)
-
-    ctx = SlackUserContext(slack_payload, db)
+    ctx = SlackUserContext(body, db)
 
     slack_profile = ctx.slack_profile_context()
     team = ctx.team_context()
