@@ -80,11 +80,17 @@ async def answer_slack(body: SlackMessagePayload,
     answer = answer_question(body.event.text, user_context)
 
     logger.debug(f"Answer: {answer}")
+    logger.debug(f"SlackUser: {user_context['slack_user_id']}")
+    logger.debug(f"SlackTeam: {user_context['slack_team_id']}")
     logger.debug(f"OmoUserID: {user_context['omo_user_id']}")
+    logger.debug(f"OmoTeamID: {user_context['omo_team_id']}")
+    logger.debug(f"PineconeIndex: {user_context['omo_pinecone_index']}")
     
     time_elapsed = time.time() - start 
     logger.debug(f"Elapsed: {time_elapsed}")
     logger.debug("---End---")
+
+    return answer
 
 @bolt_app.event("message")
 def handle_message(body, say, logger):

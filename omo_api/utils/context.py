@@ -141,16 +141,18 @@ class SlackUserContext:
                 pc_config = team.team_config.pinecone_configs[0]
 
                 self.context['omo_pinecone_index'] = pc_config.index_name
+                self.context['omo_pinecone_env'] = pc_config.environment
 
                 secret = json.loads(get_aws_secret(pc_config.api_key))
                 self.context['omo_pinecone_api_key'] = secret['api_key']
+                logger.debug('***secret', secret['api_key'])
             else:
-                logger.debug('Creating new Pinecone conf for team_config')
+                logger.debug('Creating new default Pinecone conf for team_config')
                 pc_kwargs = {
                     'index_name': PINECONE_DEFAULT_INDEX,
                     'api_key': PINECONE_DEFAULT_API_KEY,
                     'environment': PINECONE_DEFAULT_ENV,
-                    'team_config': team.team_config.id
+                    'team_config_id': team.team_config.id
                 }
                 pc_conf = PineconeConfig(**pc_kwargs)
                 self.db.add(pc_conf)
@@ -218,9 +220,9 @@ async def get_slack_user_context(body: SlackMessagePayload,
             user_ctx = ctx.user_context(team, slack_profile)
         else:
             msg = "Exception creating context: No Slack Profile"
-            logger.debug(f"{msg}: {request_body}")
+            logger.debug(f"{msg}: {body}")
     else:
         msg = "Exception creating context: No Team"
-        logger.debug(f"{msg}: {request_body}")
+        logger.debug(f"{msg}: {body}")
 
     return ctx.get_context() 
