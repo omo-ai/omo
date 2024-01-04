@@ -120,6 +120,7 @@ class SlackUserContext:
                 self.context['omo_team_config_id'] = team_config.id
             else:
                 self.context['omo_team_config_id'] = team.team_config.id
+                team_config = team.team_config
         
         except Exception as e:
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
