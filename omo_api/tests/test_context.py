@@ -116,7 +116,6 @@ class TestContext:
             # using a mock response. Doing so will lead to an exception
             # due to RunnableParralel
             answer = requests.post(f"{self.api_host}/api/v1/slack/answer", json=body)
-            print('*******', answer)
             #answer = postprocess_message(answer)
             #say(answer)
 
@@ -130,5 +129,3 @@ class TestContext:
         assert_auth_test_count(self, 1)
         sleep(1)  # wait a bit after auto ack()
         assert self.mock_received_requests["/chat.postMessage"] == 1
-
-        answer = requests.post('/api/v1/slack/answer')

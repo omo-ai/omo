@@ -41,6 +41,8 @@ app = FastAPI(openapi_url=openapi_url)
 
 def log_info(req_body, res_body):
     logging.info(req_body)
+    #TODO this is returning null. likely because in get_slack_user_context
+    # we call request.json()
     logging.info(res_body)
 
 async def set_body(request: Request, body: bytes):
