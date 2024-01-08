@@ -60,6 +60,17 @@ class TestContext:
         resp = self.web_client.api_test()
         assert resp != None
     
+    def dispatch(self, app):
+        timestamp, body = str(int(time())), json.dumps(self.valid_message_body)
+        request: BoltRequest = BoltRequest(
+            body=body, headers=self.build_headers(timestamp, body)
+        )
+        response = app.dispatch(request)
+        assert response.status == 200
+        assert_auth_test_count(self, 1)
+        sleep(1)  # wait a bit after auto ack()
+        assert self.mock_received_requests["/chat.postMessage"] == 1
+    
     def test_context_keys(self):
         # TODO assumes data is in the database
         app = App(client=self.web_client, signing_secret=self.signing_secret)
@@ -89,17 +100,7 @@ class TestContext:
             assert context['slack_user_id'] == None
             say('Finished')
 
-
-        timestamp, body = str(int(time())), json.dumps(self.valid_message_body)
-        request: BoltRequest = BoltRequest(
-            body=body, headers=self.build_headers(timestamp, body)
-        )
-        response = app.dispatch(request)
-        assert response.status == 200
-        assert_auth_test_count(self, 1)
-        sleep(1)  # wait a bit after auto ack()
-        assert self.mock_received_requests["/chat.postMessage"] == 1
-
+        self.dispatch(app)
 
     def test_slack_context(self):
         app = App(client=self.web_client, signing_secret=self.signing_secret)
@@ -123,15 +124,7 @@ class TestContext:
             say('Finished')
 
     
-        timestamp, body = str(int(time())), json.dumps(self.valid_message_body)
-        request: BoltRequest = BoltRequest(
-            body=body, headers=self.build_headers(timestamp, body)
-        )
-        response = app.dispatch(request)
-        assert response.status == 200
-        assert_auth_test_count(self, 1)
-        sleep(1)  # wait a bit after auto ack()
-        assert self.mock_received_requests["/chat.postMessage"] == 1
+        self.dispatch(app)
     
     def test_team_context(self):
         app = App(client=self.web_client, signing_secret=self.signing_secret)
@@ -151,15 +144,7 @@ class TestContext:
             assert context['omo_team_id'] != None
             say('Finished')
     
-        timestamp, body = str(int(time())), json.dumps(self.valid_message_body)
-        request: BoltRequest = BoltRequest(
-            body=body, headers=self.build_headers(timestamp, body)
-        )
-        response = app.dispatch(request)
-        assert response.status == 200
-        assert_auth_test_count(self, 1)
-        sleep(1)  # wait a bit after auto ack()
-        assert self.mock_received_requests["/chat.postMessage"] == 1
+        self.dispatch(app)
     
     def test_team_config(self):
         app = App(client=self.web_client, signing_secret=self.signing_secret)
@@ -181,15 +166,7 @@ class TestContext:
             assert context['omo_team_config_id'] != None
             say('Finished')
     
-        timestamp, body = str(int(time())), json.dumps(self.valid_message_body)
-        request: BoltRequest = BoltRequest(
-            body=body, headers=self.build_headers(timestamp, body)
-        )
-        response = app.dispatch(request)
-        assert response.status == 200
-        assert_auth_test_count(self, 1)
-        sleep(1)  # wait a bit after auto ack()
-        assert self.mock_received_requests["/chat.postMessage"] == 1
+        self.dispatch(app)
     
     def test_user_context(self):
         app = App(client=self.web_client, signing_secret=self.signing_secret)
@@ -213,12 +190,6 @@ class TestContext:
 
             say('Finished')
     
-        timestamp, body = str(int(time())), json.dumps(self.valid_message_body)
-        request: BoltRequest = BoltRequest(
-            body=body, headers=self.build_headers(timestamp, body)
-        )
-        response = app.dispatch(request)
-        assert response.status == 200
-        assert_auth_test_count(self, 1)
-        sleep(1)  # wait a bit after auto ack()
-        assert self.mock_received_requests["/chat.postMessage"] == 1
+        self.dispatch(app)
+    
+
