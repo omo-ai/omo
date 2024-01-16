@@ -3,6 +3,7 @@ uvicorn==0.23.2
 atlassian-python-api==3.41.3
 langchain==0.0.333
 langchainhub==0.1.13
+langchain-community==0.0.11
 rlPyCairo==0.3.0
 pytesseract==0.3.10
 Pillow==10.1.0

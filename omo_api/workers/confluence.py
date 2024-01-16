@@ -4,16 +4,20 @@ from langchain.embeddings import OpenAIEmbeddings
 from langchain.document_loaders import ConfluenceLoader
 from langchain.vectorstores import Pinecone
 from omo_api.utils.prompt import query_yes_no
+import pinecone
 
 from dotenv import load_dotenv
 
-CUSTOMER_KEY='komodo'
-ENVIRONMENT='development'
+CUSTOMER_KEY='demo'
+ENVIRONMENT='production'
 
 ENV_PATH='../../conf/'
 
-load_dotenv(os.path.join(ENV_PATH, f".env.{ENVIRONMENT}"))
-load_dotenv(os.path.join(ENV_PATH, f"envs/.env.{CUSTOMER_KEY}"))
+load_dotenv(os.path.join(ENV_PATH, f"envs/.env.{ENVIRONMENT}"))
+load_dotenv(os.path.join(ENV_PATH, f"envs/{CUSTOMER_KEY}/.env"))
+
+for name, value in os.environ.items():
+    print("{0}: {1}".format(name, value))
 
 def get_space_keys():
     keys = os.getenv('CONFLUENCE_SPACE_KEYS')
@@ -36,7 +40,8 @@ if not answer:
 
 
 loader = ConfluenceLoader(
-    url=os.getenv('CONFLUENCE_URL'),
+    #url=os.getenv('CONFLUENCE_BASE_URL'),
+    url='https://blackarrow.atlassian.net/wiki',
     username=os.getenv('ATLASSIAN_USERNAME'),
     api_key=os.getenv('ATLASSIAN_API_TOKEN')
 )
@@ -63,6 +68,11 @@ if not answer:
 
 index_name = os.getenv('PINECONE_INDEX')
 print(f"Writing to index {index_name}...")
+
+pinecone.init(
+    api_key=os.getenv("PINECONE_API_KEY"),
+    environment=os.getenv("PINECONE_ENV"),
+)
 
 embedding_function = OpenAIEmbeddings(openai_api_key=os.getenv("OPENAI_API_KEY"))
 docsearch = Pinecone.from_documents(all_docs, embedding_function, index_name=index_name)
