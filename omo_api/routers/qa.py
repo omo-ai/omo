@@ -42,7 +42,7 @@ def preprocess_message(message: str) -> str:
     return message
 
 def postprocess_message(message: str) -> str:
-    pass
+    return message
 
 def show_prompt() -> str:
     prompt_responses = [

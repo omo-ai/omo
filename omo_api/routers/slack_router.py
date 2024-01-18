@@ -113,10 +113,11 @@ def handle_message(body, say, logger):
 
         # make an HTTP request
         answer = requests.post(f"{API_HOST}/api/v1/slack/answer", json.dumps(body))
-        postprocessed_msg = postprocess_message(answer)
+        postprocessed_msg = postprocess_message(answer.text)
 
         say(postprocessed_msg)
 
+# TODO
 @bolt_app.event("app_mention")
 def handle_app_mention(body, say):
     message = SlackMessagePayload(**body)
