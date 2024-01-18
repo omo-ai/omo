@@ -134,37 +134,40 @@ class SlackUserContext:
         Set the Pinecone Config for the user
         """
         pinecone_ctx = None
+
         try:
-            if team.team_config.pinecone_configs:
-                # this is modeled as a team having many pineconf_configs but in reality they only have one
-                logger.debug('Getting existing Pinecone confs')
-                pc_config = team.team_config.pinecone_configs[0]
 
-                self.context['omo_pinecone_index'] = pc_config.index_name
-                self.context['omo_pinecone_env'] = pc_config.environment
-
-                secret = json.loads(get_aws_secret(pc_config.api_key))
-                self.context['omo_pinecone_api_key'] = secret['api_key']
-                logger.debug('***secret', secret['api_key'])
-            else:
-                logger.debug('Creating new default Pinecone conf for team_config')
+            if not team.team_config.pinecone_configs:
+                # create the pinecone config for the team
+                logger.debug(f"Creating new default pinecone conf for team_config: {team.team_config.id}")
                 pc_kwargs = {
                     'index_name': PINECONE_DEFAULT_INDEX,
                     'api_key': PINECONE_DEFAULT_API_KEY,
                     'environment': PINECONE_DEFAULT_ENV,
                     'team_config_id': team.team_config.id
                 }
-                pc_conf = PineconeConfig(**pc_kwargs)
-                self.db.add(pc_conf)
+                pc_config = PineconeConfig(**pc_kwargs)
+                self.db.add(pc_config)
                 self.db.commit()
+                logger.debug(f"...created pinecone config {pc_config.id}")
 
-                pinecone_ctx = pc_conf
+            else:
+                pc_config = team.team_config.pinecone_configs[0]
+
+            self.context['omo_pinecone_index'] = pc_config.index_name 
+            self.context['omo_pinecone_env'] = pc_config.environment
+            
+            secret = json.loads(get_aws_secret(pc_config.api_key))
+            self.context['omo_pinecone_api_key'] = secret['api_key']
+
+            pinecone_ctx = pc_config
 
         except Exception as e:
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(e).__name__, e.args)
-            logger.debug(f"Exception setting pinecone_config: {message}") 
-        
+            logger.debug(f"Exception setting pinecone config: {message}") 
+
+
         return pinecone_ctx
         
     def user_context(self, team: Team, slack_profile: SlackProfile) -> User:

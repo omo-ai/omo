@@ -1,5 +1,6 @@
 import os
 import time
+import json
 import logging
 import requests
 from typing import Annotated
@@ -111,7 +112,7 @@ def handle_message(body, say, logger):
         say(show_prompt())
 
         # make an HTTP request
-        answer = requests.post(f"{API_HOST}/api/v1/slack/answer", body)
+        answer = requests.post(f"{API_HOST}/api/v1/slack/answer", json.dumps(body))
         postprocessed_msg = postprocess_message(answer)
 
         say(postprocessed_msg)
