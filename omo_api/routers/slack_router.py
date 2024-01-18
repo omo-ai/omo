@@ -22,12 +22,18 @@ from omo_api.routers.qa import (
 logger = logging.getLogger(__name__)
 
 # These need to align with the Slack events we're receiving
+# Required scopes and their correspending events or API calls
+
 oauth_required_scopes = [
-    "channels:read",
-    "groups:read",
-    "chat:write",
-    "app_mentions:read",
-    "reactions:read"
+    "channels:read",        # api: users.conversations
+    "channels:history",     # event: message,message.channels
+    "groups:read",          # api: users.conversations
+    "groups:history",       # event: message
+    "chat:write",           # api: chat.postMessage
+    "app_mentions:read",    # event: app_mention
+    "reactions:read",       # event: reaction_added, reaction_removed; api: reactions.get, reactions.list
+    "im:history",           # event: message,message.im
+    "mpim:history",         # event: message
 ]
 
 SLACK_CLIENT_ID = os.getenv('SLACK_CLIENT_ID')
