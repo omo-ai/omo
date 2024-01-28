@@ -89,9 +89,9 @@ def say_hello(body, say, logger):
 
     prompt_response = random.choice(prompt_responses)
     say(f"{prompt_response} Please wait a few moments...")
-    response = requests.post(f'http://{API_HOST}/api/v1/slack/answer', json.dumps(message_body))
+    answer = requests.post(f'http://{API_HOST}/api/v1/slack/answer', json.dumps(message_body))
 
-    say(response.text)
+    say(blocks=answer.json())
 
 # Start the Slack bolt app to interact via websockets
 SocketModeHandler(bolt_app, SLACK_APP_TOKEN).start()

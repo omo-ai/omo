@@ -4,9 +4,11 @@ import pinecone
 import random
 import logging
 from operator import itemgetter
-from typing import Annotated
+from typing import Annotated, List
 from fastapi import Depends, HTTPException, APIRouter
 from langchain import hub
+from langchain.chains.qa_with_sources.loading import load_qa_with_sources_chain
+from langchain.chains.qa_with_sources.retrieval import RetrievalQAWithSourcesChain
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import Pinecone
 from langchain.chat_models import ChatOpenAI
@@ -14,6 +16,7 @@ from langchain.schema.runnable import RunnablePassthrough, RunnableParallel
 from langchain.prompts import PromptTemplate
 from langchain.schema import StrOutputParser
 from omo_api.conf.prompt import PROMPT_TEMPLATE
+from langchain.docstore.document import Document
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +44,19 @@ def preprocess_message(message: str) -> str:
 
     return message
 
-def postprocess_message(message: str) -> str:
-    return message
+def extract_sources(source_documents: List[Document]) -> list:
+    """
+    Dedupe sources and extra source metadata
+    """
+    seen_sources = []
+    final_sources = []
+    for doc in source_documents:
+        title = doc.metadata['title']
+        source = doc.metadata['source']
+        if source not in seen_sources:
+            final_sources.append({'title': title, 'source': source}) 
+    return final_sources
+        
 
 def show_prompt() -> str:
     prompt_responses = [
@@ -54,7 +68,7 @@ def show_prompt() -> str:
     return f"{prompt_response} Please wait a few moments..."
 
 
-def answer_question(question: str, context: dict):
+def answer_question(question: str, context: dict) -> dict:
 
     pinecone.init(
         api_key=context['omo_pinecone_api_key'], 
@@ -67,28 +81,51 @@ def answer_question(question: str, context: dict):
 
     llm = ChatOpenAI(model_name="gpt-4-1106-preview", temperature=0, openai_api_key=OPENAI_API_KEY)
 
-    rag_prompt_custom = PromptTemplate.from_template(PROMPT_TEMPLATE)
+    qa_chain = load_qa_with_sources_chain(llm=llm, chain_type='stuff')
 
-    rag_chain_from_docs = (
-        {
-            "context": lambda input: input["documents"],
-            "question": itemgetter("question"),
-        }
-        | rag_prompt_custom
-        | llm
-        | StrOutputParser() # converts any input into a string
+    qa = RetrievalQAWithSourcesChain(
+        combine_documents_chain = qa_chain,
+        retriever = retriever,
+        return_source_documents=True
     )
 
-    rag_chain_with_source = RunnableParallel(
-        {"documents": retriever, "question": RunnablePassthrough()}
-    ) | {
-        "documents": lambda input: [doc.metadata for doc in input["documents"]],
-        "answer": rag_chain_from_docs,
-    }
+    answer_response = qa({ 'question': question }, return_only_outputs=False)
 
-    # rag_prompt = hub.pull("rlm/rag-prompt")
-    # rag_chain = {"context": retriever, "question": RunnablePassthrough()} | rag_prompt | llm
+    final_answer = {}
+    
+    if answer_response['sources']:
+        sources = extract_sources(answer_response['source_documents'])
+    else:
+        sources = ''
+    
+    final_answer['question'] = answer_response['question']
+    final_answer['answer'] = answer_response['answer']
+    final_answer['sources'] = sources
 
-    answer = rag_chain_with_source.invoke(question)
+    return final_answer
 
-    return answer['answer']
+    # rag_prompt_custom = PromptTemplate.from_template(PROMPT_TEMPLATE)
+
+    # rag_chain_from_docs = (
+    #     {
+    #         "context": lambda input: input["documents"],
+    #         "question": itemgetter("question"),
+    #     }
+    #     | rag_prompt_custom
+    #     | llm
+    #     | StrOutputParser() # converts any input into a string
+    # )
+
+    # rag_chain_with_source = RunnableParallel(
+    #     {"documents": retriever, "question": RunnablePassthrough()}
+    # ) | {
+    #     "documents": lambda input: [doc.metadata for doc in input["documents"]],
+    #     "answer": rag_chain_from_docs,
+    # }
+
+    # # rag_prompt = hub.pull("rlm/rag-prompt")
+    # # rag_chain = {"context": retriever, "question": RunnablePassthrough()} | rag_prompt | llm
+
+    # answer = rag_chain_with_source.invoke(question)
+
+    # return answer['answer']

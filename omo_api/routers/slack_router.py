@@ -16,7 +16,6 @@ from omo_api.models.slack import SlackMessagePayload
 from omo_api.routers.qa import (
     answer_question,
     preprocess_message,
-    postprocess_message,
     show_prompt
 )
 
@@ -73,6 +72,45 @@ async def oauth_redirect(req: Request):
 async def endpoint(req: Request):
     return await bolt_app_handler.handle(req)
 
+def create_slack_response(answer, sources) -> list:
+    def format_source_str(sources) -> str:
+        sources_str = ""
+
+        for source in sources: # [{'title': 'Document Title', 'source': 'https://link_to_source.com'}]
+            source_str = f"• <{source['source']}|{source['title']}> \n"
+            sources_str += source_str
+
+        return sources_str
+
+    if sources:
+        slack_blocks_template = [
+            {
+                "type": "section", # answer
+                "text": {
+                    "type": "mrkdwn",
+                    "text": answer,
+                }
+            },
+            {
+                "type": "section", # sources
+                "text": {
+                    "type": "mrkdwn",
+                    "text": "Sources:\n" + format_source_str(sources)
+                }
+            }
+        ]
+    else:
+        slack_blocks_template = [
+           {
+                "type": "section", # answer
+                "text": {
+                    "type": "mrkdwn",
+                    "text": answer,
+                }
+            } 
+        ]
+    
+    return slack_blocks_template
 
 @router.post('/api/v1/slack/answer')
 async def answer_slack(body: SlackMessagePayload,
@@ -82,11 +120,12 @@ async def answer_slack(body: SlackMessagePayload,
     logger = logging.getLogger('answer_question')
     logger.debug("---Start---")
 
-    logger.debug(f"Question: {body.event.text}")
-
+    # dict with question, answer, and sources
     answer = answer_question(body.event.text, user_context)
 
-    logger.debug(f"Answer: {answer}")
+    slack_response = create_slack_response(answer['answer'], answer['sources'])
+
+    logger.debug(f"QuestionAnswer: {answer}")
     logger.debug(f"SlackUser: {user_context['slack_user_id']}")
     logger.debug(f"SlackTeam: {user_context['slack_team_id']}")
     logger.debug(f"OmoUserID: {user_context['omo_user_id']}")
@@ -97,7 +136,7 @@ async def answer_slack(body: SlackMessagePayload,
     logger.debug(f"Elapsed: {time_elapsed}")
     logger.debug("---End---")
 
-    return answer
+    return slack_response
 
 @bolt_app.event("message")
 def handle_message(body, say, logger):
@@ -113,9 +152,8 @@ def handle_message(body, say, logger):
 
         # make an HTTP request
         answer = requests.post(f"{API_HOST}/api/v1/slack/answer", json.dumps(body))
-        postprocessed_msg = postprocess_message(answer.text)
 
-        say(postprocessed_msg)
+        say(blocks=answer.json())
 
 # TODO
 @bolt_app.event("app_mention")
@@ -126,9 +164,7 @@ def handle_app_mention(body, say):
 
     preprocessed_msg = preprocess_message(message.event.text)
     answer = answer_question(preprocessed_msg)
-    postprocessed_msg = postprocess_message(answer)
-
-    say(postprocessed_msg)
+    say(blocks=answer.json())
 
 # TODO
 @bolt_app.command("/omo")
