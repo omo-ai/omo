@@ -16,8 +16,7 @@ from omo_api.tests.mock_web_api_server import (
 from omo_api.tests.utils import remove_os_env_temporarily, restore_os_env
 from omo_api.routers.qa import (
     answer_question,
-    preprocess_message,
-    postprocess_message,
+    preprocess_message
 )
 
 
@@ -142,13 +141,11 @@ class TestEvents:
             # due to RunnableParralel
             sources = dedupe_sources(self.mock_langchain_answer['documents'])
 
-            postprocessed_msg = postprocess_message(
-                {
-                    'answer': self.mock_langchain_answer['answer'],
-                    'sources': sources 
-                }
-            )
-            self.valid_message_body['event']['blocks'] == postprocess_message
+            postprocessed_msg = {
+                'answer': self.mock_langchain_answer['answer'],
+                'sources': sources 
+            }
+            self.valid_message_body['event']['blocks'] == postprocessed_msg
             say(postprocessed_msg)
 
 

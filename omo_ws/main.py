@@ -5,6 +5,7 @@ import requests
 import logging
 from logging.config import dictConfig
 from omo_ws.conf.log import log_config
+from omo_api.models.slack import SlackMessagePayload
 from fastapi import FastAPI
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
@@ -73,13 +74,15 @@ message_body = {
     "event_context": "4-eyJldCI6Im1lc3NhZ2UiLCJ0aWQiOiJUMDY1TFBLMlkxSCIsImFpZCI6IkEwNjZWUThFUFY1IiwiY2lkIjoiQzA2N0hIMUJaTTMifQ"
 }
 
+prompt_responses = [
+    "Getting the answer for you!",
+    "I'm on it!",
+    "Good question! Let me see."
+]
+
 @bolt_app.event("message")
 def say_hello(body, say, logger):
-    prompt_responses = [
-        "Getting the answer for you!",
-        "I'm on it!",
-        "Good question! Let me see."
-    ]
+
     message = body['event']['text']
     # The payload sent to a websocket endpoint is different
     # from that sent to an HTTP endpoint. Herw we mock the payload
@@ -92,6 +95,17 @@ def say_hello(body, say, logger):
     answer = requests.post(f'http://{API_HOST}/api/v1/slack/answer', json.dumps(message_body))
 
     say(blocks=answer.json())
+
+@bolt_app.event('app_mention')
+def handle_app_mention(body, say):
+
+    prompt_response = random.choice(prompt_responses)
+    say(f"{prompt_response} Please wait a few moments...")
+    answer = requests.post(f'http://{API_HOST}/api/v1/slack/answer', json.dumps(body))
+
+    say(blocks=answer.json())
+
+
 
 # Start the Slack bolt app to interact via websockets
 SocketModeHandler(bolt_app, SLACK_APP_TOKEN).start()

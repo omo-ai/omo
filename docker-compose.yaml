@@ -11,7 +11,8 @@ services:
     container_name: omo_db_1
     volumes:
       - ./omo_api/db/init:/docker-entrypoint-initdb.d
-      - "pg_${APP_ENV}_data:/var/lib/postgresql/data"
+      #- "pg_${APP_ENV}_data:/var/lib/postgresql/data"
+      - "pg_development_data:/var/lib/postgresql/data"
     ports:
       - 5432:5432
     env_file:

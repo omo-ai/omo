@@ -73,7 +73,13 @@ async def endpoint(req: Request):
     return await bolt_app_handler.handle(req)
 
 def create_slack_response(answer, sources) -> list:
+    """
+    Formats the answer and sources in using Slack blocks
+    """
     def format_source_str(sources) -> str:
+        """
+        Format the source documents
+        """
         sources_str = ""
 
         for source in sources: # [{'title': 'Document Title', 'source': 'https://link_to_source.com'}]
@@ -155,15 +161,12 @@ def handle_message(body, say, logger):
 
         say(blocks=answer.json())
 
-# TODO
 @bolt_app.event("app_mention")
 def handle_app_mention(body, say):
-    message = SlackMessagePayload(**body)
-    
     say(show_prompt())
 
-    preprocessed_msg = preprocess_message(message.event.text)
-    answer = answer_question(preprocessed_msg)
+    answer = requests.post(f"{API_HOST}/api/v1/slack/answer", json.dumps(body))
+
     say(blocks=answer.json())
 
 # TODO
