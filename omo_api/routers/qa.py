@@ -103,29 +103,3 @@ def answer_question(question: str, context: dict) -> dict:
     final_answer['sources'] = sources
 
     return final_answer
-
-    # rag_prompt_custom = PromptTemplate.from_template(PROMPT_TEMPLATE)
-
-    # rag_chain_from_docs = (
-    #     {
-    #         "context": lambda input: input["documents"],
-    #         "question": itemgetter("question"),
-    #     }
-    #     | rag_prompt_custom
-    #     | llm
-    #     | StrOutputParser() # converts any input into a string
-    # )
-
-    # rag_chain_with_source = RunnableParallel(
-    #     {"documents": retriever, "question": RunnablePassthrough()}
-    # ) | {
-    #     "documents": lambda input: [doc.metadata for doc in input["documents"]],
-    #     "answer": rag_chain_from_docs,
-    # }
-
-    # # rag_prompt = hub.pull("rlm/rag-prompt")
-    # # rag_chain = {"context": retriever, "question": RunnablePassthrough()} | rag_prompt | llm
-
-    # answer = rag_chain_with_source.invoke(question)
-
-    # return answer['answer']
