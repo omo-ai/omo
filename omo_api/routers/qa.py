@@ -79,7 +79,7 @@ def answer_question(question: str, context: dict) -> dict:
     docsearch = Pinecone.from_existing_index(context['omo_pinecone_index'], embedding_function)
     retriever = docsearch.as_retriever()
 
-    llm = ChatOpenAI(model_name="gpt-4-1106-preview", temperature=0, openai_api_key=OPENAI_API_KEY)
+    llm = ChatOpenAI(model_name="gpt-4-turbo-preview", temperature=0, openai_api_key=OPENAI_API_KEY)
 
     qa_chain = load_qa_with_sources_chain(llm=llm, chain_type='stuff')
 
