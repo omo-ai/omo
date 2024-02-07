@@ -30,6 +30,7 @@ class AirtableWorker(BaseWorker):
         self.table_ids = table_ids
         self.format = format
         self.reader = CustomAirtableReader(api_key=api_key)
+        super().__init__()
     
     def load_documents(self):
         all_documents = []
@@ -54,6 +55,7 @@ class AirtableWorker(BaseWorker):
             if format == 'langchain':
                 doc = doc.to_langchain_format()
                 doc.metadata['source'] = self.reader.base_metadata[base_id]['tables'][table_id]['url']
+                doc.metadata['title'] = self.reader.base_metadata[base_id]['tables'][table_id]['name']
 
             formatted_docs.append(doc)
         
@@ -64,4 +66,8 @@ worker = AirtableWorker(api_key=os.getenv('AIRTABLE_ACCESS_TOKEN'),
                         table_ids=['tblpLGCowDETrMhL4', 'tblx58yI3yOx7Jrrp', 'tbl2ZdgQB0k1YKnK0'])
 
 documents = worker.load_documents()
-print(documents)
+answer = query_yes_no(f"Write {len(documents)} documents to pinecone index: {worker.pinecone_index}?")
+if answer:
+    worker.to_pinecone(documents)
+else:
+    print('Exiting...')
