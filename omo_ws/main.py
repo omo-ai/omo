@@ -94,7 +94,7 @@ def say_hello(body, say, logger):
     say(f"{prompt_response} Please wait a few moments...")
     answer = requests.post(f'http://{API_HOST}/api/v1/slack/answer', json.dumps(message_body))
 
-    say(blocks=answer.json())
+    say(blocks=answer.json(), unfurl_links=False, unfurl_media=False)
 
 @bolt_app.event('app_mention')
 def handle_app_mention(body, say):
@@ -103,7 +103,7 @@ def handle_app_mention(body, say):
     say(f"{prompt_response} Please wait a few moments...")
     answer = requests.post(f'http://{API_HOST}/api/v1/slack/answer', json.dumps(body))
 
-    say(blocks=answer.json())
+    say(blocks=answer.json(), unfurl_links=False, unfurl_media=False)
 
 
 

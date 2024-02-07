@@ -159,7 +159,7 @@ def handle_message(body, say, logger):
         # make an HTTP request
         answer = requests.post(f"{API_HOST}/api/v1/slack/answer", json.dumps(body))
 
-        say(blocks=answer.json())
+        say(blocks=answer.json(), unfurl_links=False, unfurl_media=False)
 
 @bolt_app.event("app_mention")
 def handle_app_mention(body, say):
@@ -167,7 +167,7 @@ def handle_app_mention(body, say):
 
     answer = requests.post(f"{API_HOST}/api/v1/slack/answer", json.dumps(body))
 
-    say(blocks=answer.json())
+    say(blocks=answer.json(), unfurl_links=False, unfurl_media=False)
 
 # TODO
 @bolt_app.command("/omo")
