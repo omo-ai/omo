@@ -18,4 +18,5 @@ SessionLocal = sessionmaker(
     bind=engine
 )
 
+# TODO do we need this if we have get_db() in utils?
 session = SessionLocal()

@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.background import BackgroundTask
 from starlette.types import Message
 from omo_api.conf.log import log_config
+from omo_api.conf.auth0 import AUTH0_CORS_IPS
 from omo_api.routers import (
     auth_router,
     files_router, 
@@ -27,7 +28,7 @@ if APP_ENV == 'production':
     origins = [
         "https://api.omo.bot",
         "https://app.helloomo.ai",
-    ]
+    ] + AUTH0_CORS_IPS
     openapi_url = None # don't publish docs publicly
 else:
 
