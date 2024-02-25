@@ -7,7 +7,7 @@ echo "Building Docker image..."
 
 docker build -t omo_api:$TAG-amd64 -f Dockerfile.local --platform linux/amd64 .
 
-#docker tag omo_api:$TAG $ECR_URL/omo_api:$TAG-amd64
+docker tag omo_api:$TAG $ECR_URL/omo_api:$TAG-amd64
 
 echo "Pushing to ECR..."
 
