@@ -7,11 +7,11 @@ class Team(BaseModel):
     name: str
 
 class UserRegister(BaseModel):
-    # These are the only attributes required for registration
-    username: str
     email: str
-    password: str
-    slackCode: str
+    # these are optional in the case of social logins
+    username: Union[str, None] = None
+    password: Union[str, None] = None
+    slackCode: Union[str, None] = None
 
 class User(BaseModel):
     username: str
