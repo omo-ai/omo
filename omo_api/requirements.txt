@@ -1,18 +1,18 @@
 fastapi==0.104.1
 uvicorn==0.23.2
 atlassian-python-api==3.41.3
-langchain==0.0.333
+langchain==0.1.9
 langchainhub==0.1.13
-langchain-community==0.0.16
 llama-index==0.9.41
+langchain-openai==0.0.8
 rlPyCairo==0.3.0
 pytesseract==0.3.10
 Pillow==10.1.0
 reportlab==4.0.7
 svglib==1.5.1
-openai==1.2.2
+openai==1.13.3
 requests==2.31.0
-tiktoken==0.5.1
+tiktoken==0.6.0
 python-dotenv==1.0.0
 beautifulsoup4==4.12.2
 #sentence-transformers==0.3.0 # this adds more than 5GB to the docker image. don't install it.
