@@ -16,7 +16,7 @@ from langchain.vectorstores import Pinecone
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain.docstore.document import Document
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
-from omo_api.models.web import WebMessagePayload
+from omo_api.models.chat import Message
 from omo_api.routers.callbacks import QueueCallbackHandler
 
 logger = logging.getLogger(__name__)
@@ -80,10 +80,18 @@ def show_prompt() -> str:
     return f"{prompt_response} Please wait a few moments..."
 
 
-@router.post('/api/v1/web/answer/')
-async def answer_web(payload: WebMessagePayload):
+# @router.post('/api/v1/chat/')
+# async def answer(payload: MessageHistoryPayload):
+#     # TODO the context should be provided by the frontend
+#     messages = payload.messages
+#     message = messages[-1] # gets the most recent message
+#     return StreamingResponse(answer_question_stream(message.content),
+#                              media_type="application/json")
+
+@router.post('/api/v1/chat/')
+async def answer_web(message: Message):
     # TODO the context should be provided by the frontend
-    return StreamingResponse(answer_question_stream(payload.question),
+    return StreamingResponse(answer_question_stream(message.content),
                              media_type="application/json")
 
 def format_docs(docs):
@@ -127,13 +135,14 @@ async def answer_question_stream(question):
     ).assign(answer=rag_chain_from_docs)
 
     for chunk in rag_chain_with_source.stream(question):
-        yield json.dumps({'answer': chunk.get('answer')})
+        answer = chunk.get('answer') 
+        yield json.dumps({'answer': answer}).encode('utf8')
 
         if 'context' in chunk:
             yield json.dumps(
                 {'sources': [doc.metadata['source'] for doc in chunk['context'] ]}
-            )
-
+            ).encode('utf8')
+    
 
     # qa = RetrievalQAWithSourcesChain.from_chain_type(
     #     chain_type='stuff',
