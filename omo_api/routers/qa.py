@@ -4,6 +4,7 @@ import pinecone
 import random
 import logging
 import json
+import time
 from typing import List
 from queue import Queue
 from fastapi import APIRouter
@@ -29,6 +30,7 @@ SLACK_SIGNING_SECRET = os.getenv('SLACK_SIGNING_SECRET')
 OPENAI_MODEL = os.getenv('OPENAI_MODEL')
 
 
+sleep_time = 10/1000 # 10 milliseconds
 
 router = APIRouter()
 
@@ -136,12 +138,18 @@ async def answer_question_stream(question):
 
     for chunk in rag_chain_with_source.stream(question):
         answer = chunk.get('answer') 
-        yield json.dumps({'answer': answer}).encode('utf8')
+        answer_chunk = json.dumps({'answer': answer}, ensure_ascii=False).encode('utf8')
+        yield answer_chunk + b'\n'
+        time.sleep(sleep_time) # the server produces chunks faster than the client can consume them.
 
         if 'context' in chunk:
-            yield json.dumps(
-                {'sources': [doc.metadata['source'] for doc in chunk['context'] ]}
+            source_chunk = json.dumps(
+                {'sources': [doc.metadata['source'] for doc in chunk['context'] ]},
+                ensure_ascii=False
             ).encode('utf8')
+            yield source_chunk + b'\n' #jsonlines
+            time.sleep(sleep_time)
+
     
 
     # qa = RetrievalQAWithSourcesChain.from_chain_type(
