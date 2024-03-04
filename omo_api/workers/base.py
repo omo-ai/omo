@@ -1,7 +1,7 @@
 import os
 import logging
 import pinecone
-from langchain.embeddings import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings
 from langchain.vectorstores import Pinecone
 
 logger = logging.getLogger(__name__)

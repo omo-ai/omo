@@ -1,6 +1,6 @@
 import os
 import sys
-from langchain.embeddings import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings
 from langchain.document_loaders import ConfluenceLoader
 from langchain.vectorstores import Pinecone
 from omo_api.utils.prompt import query_yes_no

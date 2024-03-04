@@ -4,7 +4,7 @@ from llama_index import download_loader
 from omo_api.workers.base import BaseWorker
 from omo_api.utils import flatten_list, clean_url
 from omo_api.utils.prompt import query_yes_no
-from langchain.embeddings import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings
 from langchain.vectorstores import Pinecone
 
 """

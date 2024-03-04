@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 from typing import Dict, List, Any
 from google.oauth2 import service_account
 from langchain.schema import Document
-from langchain.embeddings import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings
 from langchain.vectorstores import Pinecone
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
