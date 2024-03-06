@@ -13,22 +13,22 @@ from langchain import hub
 from langchain.chains.qa_with_sources.loading import load_qa_with_sources_chain
 from langchain.chains.qa_with_sources.retrieval import RetrievalQAWithSourcesChain
 from langchain_openai import OpenAIEmbeddings
-from langchain.vectorstores import Pinecone
+#from langchain.vectorstores import Pinecone
+from langchain_pinecone import PineconeVectorStore
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain.docstore.document import Document
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+from langchain.schema.output_parser import StrOutputParser
+from langchain.schema.runnable import RunnablePassthrough, RunnableParallel
 from omo_api.models.chat import Message
-from omo_api.routers.callbacks import QueueCallbackHandler
 
 logger = logging.getLogger(__name__)
 
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-PINECONE_INDEX = os.getenv('PINECONE_INDEX')
+OPENAI_MODEL = os.getenv('OPENAI_MODEL')
+OPENAI_EMBEDDING_MODEL = os.getenv('OPENAI_EMBEDDING_MODEL')
 SLACK_CLIENT_ID = os.getenv('SLACK_CLIENT_ID')
 SLACK_CLIENT_SECRET = os.getenv('SLACK_CLIENT_SECRET')
 SLACK_SIGNING_SECRET = os.getenv('SLACK_SIGNING_SECRET')
-OPENAI_MODEL = os.getenv('OPENAI_MODEL')
-
 
 sleep_time = 10/1000 # 10 milliseconds
 
@@ -99,21 +99,19 @@ async def answer_web(message: Message):
 def format_docs(docs):
     return "\n\n".join(doc.page_content for doc in docs)
 
-from langchain.schema.output_parser import StrOutputParser
-from langchain.schema.runnable import RunnablePassthrough, RunnableParallel
+
 
 async def answer_question_stream(question):
     pc_api_key = os.environ['PINECONE_API_KEY']
     pc_env = os.environ['PINECONE_ENV']
     pc_index = os.environ['PINECONE_INDEX']
+    pc_ns = os.environ['PINECONE_NS']
 
-    pinecone.init(
-        api_key=pc_api_key, 
-        environment=pc_env
-    )
-
-    embedding_function = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
-    docsearch = Pinecone.from_existing_index(pc_index, embedding_function)
+    embedding_function = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY,
+                                          model=OPENAI_EMBEDDING_MODEL)
+    docsearch = PineconeVectorStore.from_existing_index(pc_index,
+                                                        embedding_function,
+                                                        namespace=pc_ns)
     retriever = docsearch.as_retriever()
 
     llm = ChatOpenAI(model_name=OPENAI_MODEL,
@@ -175,13 +173,21 @@ async def answer_question_stream(question):
 
 def answer_question(question: str, context: dict) -> dict:
 
-    pinecone.init(
-        api_key=context['omo_pinecone_api_key'], 
-        environment=context['omo_pinecone_env'], 
-    )
+    # tmp overrides for ***REMOVED*** 
+    #os.environ['PINECONE_API_KEY'] = "***REMOVED***"
+    # pinecone_index = "***REMOVED***"
+    # pinecone_ns = "***REMOVED***"
+    
+    os.environ['PINECONE_API_KEY'] = "***REMOVED***"
+    os.environ['PINECONE_ENV'] = 'gcp-starter'
+    # pinecone_index = context['omo_pinecone_index']
+    pinecone_index = 'starter_index'
+    pinecone_ns = 'default'
+    
 
     embedding_function = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
-    docsearch = Pinecone.from_existing_index(context['omo_pinecone_index'], embedding_function)
+    docsearch = PineconeVectorStore.from_existing_index(pinecone_index,
+                                                        embedding_function,)
     retriever = docsearch.as_retriever()
 
     llm = ChatOpenAI(model_name="gpt-4-turbo-preview", temperature=0, openai_api_key=OPENAI_API_KEY)
