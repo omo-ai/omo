@@ -1,25 +1,25 @@
 import os
 import re
-import pinecone
 import random
 import logging
 import json
-import time
 from typing import List
-from queue import Queue
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
-from langchain import hub
 from langchain.chains.qa_with_sources.loading import load_qa_with_sources_chain
 from langchain.chains.qa_with_sources.retrieval import RetrievalQAWithSourcesChain
 from langchain_openai import OpenAIEmbeddings
-#from langchain.vectorstores import Pinecone
-from langchain_pinecone import PineconeVectorStore
+from llama_index.vector_stores.pinecone import PineconeVectorStore
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain.docstore.document import Document
-from langchain.schema.output_parser import StrOutputParser
-from langchain.schema.runnable import RunnablePassthrough, RunnableParallel
 from omo_api.models.chat import Message
+
+from llama_index.core import VectorStoreIndex
+from llama_index.vector_stores.pinecone import PineconeVectorStore
+from llama_index.llms.openai import OpenAI
+from pinecone.grpc import PineconeGRPC
+from llama_index.embeddings.openai import OpenAIEmbedding
+from llama_index.core import Settings
 
 logger = logging.getLogger(__name__)
 
@@ -34,15 +34,6 @@ sleep_time = 10/1000 # 10 milliseconds
 
 router = APIRouter()
 
-# @router.post('/api/v1/user/prompt')
-# async def ask(prompt: str):
-
-#     def generator(prompt: str):
-#         for item in llm.stream(prompt):
-#             yield item
-
-#     return StreamingResponse(
-#         generator(question.prompt), media_type='text/event-stream')
 
 def preprocess_message(message: str) -> str:
     """
@@ -81,14 +72,26 @@ def show_prompt() -> str:
     prompt_response = random.choice(prompt_responses)
     return f"{prompt_response} Please wait a few moments..."
 
+def sources_from_response(response):
+    keys = [
+        'file_name',
+        'file_path',
+        'page_label',
+    ]
+    source_dict = {
+        'sources': [],
+    }
+    for source in response.source_nodes:
+        s = dict.fromkeys(keys, None)
 
-# @router.post('/api/v1/chat/')
-# async def answer(payload: MessageHistoryPayload):
-#     # TODO the context should be provided by the frontend
-#     messages = payload.messages
-#     message = messages[-1] # gets the most recent message
-#     return StreamingResponse(answer_question_stream(message.content),
-#                              media_type="application/json")
+        for k in keys:
+            try:
+                s[k] = source.metadata[k]
+            except:
+                pass
+        source_dict['sources'].append(s)
+    
+    return source_dict 
 
 @router.post('/api/v1/chat/')
 async def answer_web(message: Message):
@@ -96,79 +99,38 @@ async def answer_web(message: Message):
     return StreamingResponse(answer_question_stream(message.content),
                              media_type="application/json")
 
-def format_docs(docs):
-    return "\n\n".join(doc.page_content for doc in docs)
 
-
-
+import asyncio
 async def answer_question_stream(question):
+    Settings.llm = OpenAI(model=OPENAI_MODEL)
+    Settings.embed_model = OpenAIEmbedding(model=OPENAI_EMBEDDING_MODEL)  
+
+    # These will be customer / context specific
     pc_api_key = os.environ['PINECONE_API_KEY']
-    pc_env = os.environ['PINECONE_ENV']
-    pc_index = os.environ['PINECONE_INDEX']
     pc_ns = os.environ['PINECONE_NS']
+    pc_host = os.getenv('PINECONE_HOST')
 
-    embedding_function = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY,
-                                          model=OPENAI_EMBEDDING_MODEL)
-    docsearch = PineconeVectorStore.from_existing_index(pc_index,
-                                                        embedding_function,
-                                                        namespace=pc_ns)
-    retriever = docsearch.as_retriever()
+    pc = PineconeGRPC(api_key=pc_api_key)
+    pinecone_index = pc.Index(host=pc_host)
+  
+    vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace=pc_ns)
+    index = VectorStoreIndex.from_vector_store(vector_store)
+    llm = OpenAI(model=OPENAI_MODEL, temperature=0)
+    chat_engine = index.as_chat_engine(
+        chat_mode="context",
+        llm=llm,
+        streaming=True)
 
-    llm = ChatOpenAI(model_name=OPENAI_MODEL,
-                    temperature=0,
-                    openai_api_key=OPENAI_API_KEY)
-                    # callbacks=[QueueCallbackHandler(Queue())],
-                    #callbacks=[QueueCallbackHandler(queue=Queue())],
-                    # streaming=True,
-                    # verbose=True)
+    response = chat_engine.stream_chat(question)
 
-    prompt = hub.pull("rlm/rag-prompt")
-    rag_chain_from_docs = (
-        RunnablePassthrough.assign(context=(lambda x: format_docs(x["context"])))
-        | prompt
-        | llm
-        | StrOutputParser()
-    )
-
-    rag_chain_with_source = RunnableParallel(
-        {"context": retriever, "question": RunnablePassthrough()}
-    ).assign(answer=rag_chain_from_docs)
-
-    for chunk in rag_chain_with_source.stream(question):
-        answer = chunk.get('answer') 
-        answer_chunk = json.dumps({'answer': answer}, ensure_ascii=False).encode('utf8')
-        yield answer_chunk + b'\n'
-        time.sleep(sleep_time) # the server produces chunks faster than the client can consume them.
-
-        if 'context' in chunk:
-            source_chunk = json.dumps(
-                {'sources': [doc.metadata['source'] for doc in chunk['context'] ]},
-                ensure_ascii=False
-            ).encode('utf8')
-            yield source_chunk + b'\n' #jsonlines
-            time.sleep(sleep_time)
-
+    for token in response.response_gen:
+        answer_chunk = json.dumps( {'answer': token }, ensure_ascii=False) + '\n'
+        yield answer_chunk.encode('utf8')
+        await asyncio.sleep(sleep_time)
     
-
-    # qa = RetrievalQAWithSourcesChain.from_chain_type(
-    #     chain_type='stuff',
-    #     llm=llm,
-    #     retriever = retriever
-    # )
-    # yield qa(question)['answer'] # we can shift parsing of the source results to the frontend
-
-
-    # qa_chain = load_qa_with_sources_chain(llm=llm, chain_type='stuff')
-
-    # qa = RetrievalQAWithSourcesChain(
-    #     combine_documents_chain = qa_chain,
-    #     retriever = retriever,
-    #     return_source_documents=True
-    # )
-
-    #yield qa({ 'question': question }, return_only_outputs=False)
-    # print(qa({ 'question': question }, return_only_outputs=False))
-    # yield qa(question)
+    sources_dict = sources_from_response(response)
+    sources = json.dumps(sources_dict, ensure_ascii=False) + '\n'
+    yield sources.encode('utf8')
 
 
 def answer_question(question: str, context: dict) -> dict:
