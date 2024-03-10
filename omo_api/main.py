@@ -1,10 +1,8 @@
 import os
 import logging
 from logging.config import dictConfig
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.background import BackgroundTask
-from starlette.types import Message
 from omo_api.conf.log import log_config
 from omo_api.conf.auth0 import AUTH0_CORS_IPS
 from omo_api.routers import (
@@ -41,31 +39,6 @@ else:
     openapi_url = '/api/v1/openapi.json'
 
 app = FastAPI(openapi_url=openapi_url)
-
-# def log_info(req_body, res_body):
-#     logging.info(req_body)
-#     #TODO this is returning null. likely because in get_slack_user_context
-#     # we call request.json()
-#     logging.info(res_body)
-
-# async def set_body(request: Request, body: bytes):
-#     async def receive() -> Message:
-#         return {'type': 'http.request', 'body': body}
-#     request._receive = receive
-
-# @app.middleware('http')
-# async def LogMiddleware(request: Request, call_next):
-#     req_body = await request.body()
-#     await set_body(request, req_body)
-#     response = await call_next(request)
-    
-#     res_body = b''
-#     async for chunk in response.body_iterator:
-#         res_body += chunk
-    
-#     task = BackgroundTask(log_info, req_body, res_body)
-#     return Response(content=res_body, status_code=response.status_code, 
-#         headers=dict(response.headers), media_type=response.media_type, background=task)
 
 app.include_router(googledrive_router.router)
 app.include_router(auth_router.router)
