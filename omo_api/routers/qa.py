@@ -3,6 +3,7 @@ import re
 import random
 import logging
 import json
+import asyncio
 from typing import List
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
@@ -50,8 +51,7 @@ def preprocess_message(message: str) -> str:
     return message
 
 def extract_sources(source_documents: List[Document]) -> list:
-    """
-    Dedupe sources and extra source metadata
+    """ Dedupe sources and extra source metadata for the Slack response
     """
     seen_sources = []
     final_sources = []
@@ -64,6 +64,8 @@ def extract_sources(source_documents: List[Document]) -> list:
         
 
 def show_prompt() -> str:
+    """Display the initial response message in the Slack response
+    """
     prompt_responses = [
         "Getting the answer for you!",
         "I'm on it!",
@@ -73,25 +75,45 @@ def show_prompt() -> str:
     return f"{prompt_response} Please wait a few moments..."
 
 def sources_from_response(response):
-    keys = [
-        'file_name',
-        'file_path',
-        'page_label',
-    ]
-    source_dict = {
-        'sources': [],
-    }
-    for source in response.source_nodes:
-        s = dict.fromkeys(keys, None)
+    """Dedupe and return a source documents
 
-        for k in keys:
-            try:
-                s[k] = source.metadata[k]
-            except:
-                pass
-        source_dict['sources'].append(s)
-    
-    return source_dict 
+    :param response: The response from the ChatEngine
+    :return: Dictionary of sources
+    :rtrype: dict
+    """
+
+    """
+    The structure of the sources dict:
+    sources = {
+        '/path/to/file.pdf: {
+            'file_name': 'file.pdf',
+            'file_path': '/path/to/file.pdf',
+            'page_labels': [12, 34],
+        }
+    }
+    """
+    sources = {}
+    for source in response.source_nodes:
+        file_path = source.metadata.get('file_path', None)
+        
+        if not file_path:
+            continue
+
+        file_name = source.metadata.get('file_name', None)
+        page_label = source.metadata.get('page_label', None)
+
+        if file_path not in sources.keys():
+            sources[file_path] = {}            
+
+            sources[file_path]['page_label'] = []
+
+        sources[file_path]['file_path'] = file_path
+        sources[file_path]['file_name'] = file_name
+
+        if page_label:
+            sources[file_path]['page_label'].append(page_label)
+
+    return sources 
 
 @router.post('/api/v1/chat/')
 async def answer_web(message: Message):
@@ -100,8 +122,7 @@ async def answer_web(message: Message):
                              media_type="application/json")
 
 
-import asyncio
-async def answer_question_stream(question):
+async def answer_question_stream(question: str):
     Settings.llm = OpenAI(model=OPENAI_MODEL)
     Settings.embed_model = OpenAIEmbedding(model=OPENAI_EMBEDDING_MODEL)  
 
@@ -116,6 +137,8 @@ async def answer_question_stream(question):
     vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace=pc_ns)
     index = VectorStoreIndex.from_vector_store(vector_store)
     llm = OpenAI(model=OPENAI_MODEL, temperature=0)
+
+    # default 3000 token memory
     chat_engine = index.as_chat_engine(
         chat_mode="context",
         llm=llm,
@@ -129,7 +152,7 @@ async def answer_question_stream(question):
         await asyncio.sleep(sleep_time)
     
     sources_dict = sources_from_response(response)
-    sources = json.dumps(sources_dict, ensure_ascii=False) + '\n'
+    sources = json.dumps({ 'sources': sources_dict }, ensure_ascii=False) + '\n'
     yield sources.encode('utf8')
 
 
