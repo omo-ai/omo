@@ -100,15 +100,20 @@ def sources_from_response(response):
             continue
 
         file_name = source.metadata.get('file_name', None)
+        file_type = source.metadata.get('file_type', None)
         page_label = source.metadata.get('page_label', None)
+        creation_date = source.metadata.get('creation_date', None)
+        last_modified_date = source.metadata.get('last_modified_date', None)
 
         if file_path not in sources.keys():
             sources[file_path] = {}            
-
             sources[file_path]['page_labels'] = []
 
-        sources[file_path]['file_path'] = file_path
         sources[file_path]['file_name'] = file_name
+        sources[file_path]['file_path'] = file_path
+        sources[file_path]['file_type'] = file_type
+        sources[file_path]['creation_date'] = creation_date 
+        sources[file_path]['last_modified_date'] = last_modified_date 
 
         if page_label and page_label not in sources[file_path]['page_labels']:
             sources[file_path]['page_labels'].append(page_label)
