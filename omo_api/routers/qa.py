@@ -78,14 +78,14 @@ def sources_from_response(response):
     """Dedupe and return a source documents
 
     :param response: The response from the ChatEngine
-    :return: Dictionary of sources
-    :rtrype: dict
+    :return: list of dictionaries
+    :rtrype: list
     """
 
     """
     The structure of the sources dict:
     sources = {
-        '/path/to/file.pdf: {
+        '/path/to/file.pdf': {
             'file_name': 'file.pdf',
             'file_path': '/path/to/file.pdf',
             'page_labels': [12, 34],
@@ -105,15 +105,25 @@ def sources_from_response(response):
         if file_path not in sources.keys():
             sources[file_path] = {}            
 
-            sources[file_path]['page_label'] = []
+            sources[file_path]['page_labels'] = []
 
         sources[file_path]['file_path'] = file_path
         sources[file_path]['file_name'] = file_name
 
-        if page_label:
-            sources[file_path]['page_label'].append(page_label)
+        if page_label and page_label not in sources[file_path]['page_labels']:
+            sources[file_path]['page_labels'].append(page_label)
 
-    return sources 
+    """
+    Transform dict to list to make it easier for frontend to parse
+    [{
+        'file_name': 'file.pdf',
+        'file_path': '/path/to/file.pdf',
+        'page_labels': [12, 34],
+    }, ...]
+    """
+    sources_list = [sources[key] for key in sources.keys()]
+
+    return sources_list
 
 @router.post('/api/v1/chat/')
 async def answer_web(message: Message):
