@@ -74,6 +74,7 @@ def show_prompt() -> str:
     prompt_response = random.choice(prompt_responses)
     return f"{prompt_response} Please wait a few moments..."
 
+
 def sources_from_response(response):
     """Dedupe and return a source documents
 
@@ -95,21 +96,26 @@ def sources_from_response(response):
     sources = {}
     for source in response.source_nodes:
         file_path = source.metadata.get('file_path', None)
+
+        if not file_path:
+            file_path = source.metadata.get('source', None)
         
         if not file_path:
             continue
 
         file_name = source.metadata.get('file_name', None)
         file_type = source.metadata.get('file_type', None)
-        page_label = source.metadata.get('page_label', None)
         creation_date = source.metadata.get('creation_date', None)
         last_modified_date = source.metadata.get('last_modified_date', None)
+
+        page_label = source.metadata.get('page_label', None)
+        page = source.metadata.get('page', None)
 
         if file_path not in sources.keys():
             sources[file_path] = {}            
             sources[file_path]['page_labels'] = []
 
-        sources[file_path]['file_name'] = file_name
+        sources[file_path]['file_name'] = file_name or file_path
         sources[file_path]['file_path'] = file_path
         sources[file_path]['file_type'] = file_type
         sources[file_path]['creation_date'] = creation_date 
@@ -117,6 +123,9 @@ def sources_from_response(response):
 
         if page_label and page_label not in sources[file_path]['page_labels']:
             sources[file_path]['page_labels'].append(page_label)
+        
+        if page and page not in sources[file_path]['page_labels']:
+            sources[file_path]['page_labels'].append(page)
 
     """
     Transform dict to list to make it easier for frontend to parse
