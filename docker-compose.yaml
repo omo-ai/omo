@@ -16,7 +16,7 @@ services:
     ports:
       - 5432:5432
     env_file:
-      - ./omo_api/conf/envs/.env.development
+      - ./omo_api/envs/.env.development
     environment:
       APP_ENV: development
 
@@ -32,13 +32,21 @@ services:
     volumes:
       - ./omo_api:/var/www/omo_api
     env_file:
-      - ./omo_api/conf/envs/.env.development
-      - "./omo_api/conf/envs/${CUSTOMER_ENV}/.env"
+      - ./omo_api/envs/.env.development
+      - "./omo_api/envs/${CUSTOMER_ENV}/.env"
     environment:
       PYTHONPATH: "$${PYTHONPATH}:/var/www" # for absolute imports
       PORT: 8000
     depends_on:
       - db
+    
+  redis:
+    image: 'arm64v8/redis:7.2.4-alpine'
+    hostname: omo_redis_1
+    container_name: omo_redis_1
+    ports:
+        - '6379:6379'
+
   
   websockets:
     hostname: omo_ws_1
