@@ -1,8 +1,8 @@
 import os
 import logging
 import pinecone
-from fastapi import Depends, APIRouter
-from typing import List, Union
+from fastapi import Depends, APIRouter, Header
+from typing import List, Union, Annotated
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import MultipleResultsFound
@@ -10,10 +10,23 @@ from sqlalchemy.sql import func
 from omo_api.models.google_drive import GoogleDriveObjects, GoogleDriveObject
 from omo_api.db.utils import get_db
 from omo_api.db.models.googledrive import GDriveObject
+from omo_api.workers.drive import tasks
+from omo_api.loaders.gdrive.google_drive import GoogleDriveReaderOAuthAccessToken
+from omo_api.utils import flatten_list
+from omo_api.utils.pipeline import (
+    SentenceWindowPipeline,
+    get_stores,
+)
+
 from langchain_googledrive.document_loaders import GoogleDriveLoader
 from langchain_openai import OpenAIEmbeddings
 from langchain.vectorstores import Pinecone
-
+from llama_index.embeddings.openai import OpenAIEmbedding
+from llama_index.core import Settings
+from llama_index.core.extractors import TitleExtractor
+from llama_index.core.node_parser import SentenceWindowNodeParser, SentenceSplitter
+from llama_index.readers.google import GoogleDriveReader
+from llama_index.llms.openai import OpenAI
 
 # since environment variable it's a relative to the root of the project, not this file
 os.environ['GOOGLE_ACCOUNT_FILE'] = './routers/google_service_key.json'
@@ -21,6 +34,52 @@ os.environ['GOOGLE_ACCOUNT_FILE'] = './routers/google_service_key.json'
 logger = logging.getLogger(__name__) 
 
 router = APIRouter()
+
+@router.post('/v2/googledrive/files')
+async def process_gdrive_files(files: GoogleDriveObjects,
+                               x_google_authorization: Annotated[str, Header()],
+                               db: Session = Depends(get_db)):
+    
+    loader = GoogleDriveReaderOAuthAccessToken(access_token=x_google_authorization)
+
+    folders = filter(lambda f: f.type == 'folder', files.files)
+    files = filter(lambda f: f.type != 'folder', files.files)
+
+    folder_ids = [f.id for f in folders]
+    file_ids = [f.id for f in files]
+
+    all_docs = []
+    for folder_id in folder_ids:
+        folder_docs = loader.load_data(folder_id=folder_id)
+        all_docs.append(folder_docs)
+
+    docs = loader.load_data(file_ids=file_ids)
+    all_docs.append(docs)
+
+    vecstore, docstore, ingestion_cache = get_stores()
+
+    Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-large")
+    Settings.llm = OpenAI(temperature=0.0, model="gpt-4-0125-preview")
+
+    pipeline = SentenceWindowPipeline(
+        docs=flatten_list(all_docs),
+        transforms=[
+            SentenceSplitter(),
+            Settings.embed_model,
+        ],
+        params = {
+            'window_size': 3,
+            'window_metadata_key': 'window',
+            'original_text_metadata_key': 'original_text',
+        },
+        vector_store=vecstore,
+        docstore=docstore,
+        cache=ingestion_cache
+        
+    )
+    nodes = pipeline.run(num_workers=1) # anything > 1 results in AttributeError: Can't pickle local object 'split_by_sentence_tokenizer.<locals>.split'
+    logger.debug(nodes)
+    
 
 @router.post('/v1/googledrive/files')
 async def save_file(files: GoogleDriveObjects,

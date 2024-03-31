@@ -13,9 +13,9 @@ aws ecr get-login-password --region us-west-2 | docker login --username AWS --pa
 
 cd omo/omo_api
 
-docker build -t omo_api -f Dockerfile.local --platform linux/amd64 . && \
-docker tag omo_api:latest 187613313731.dkr.ecr.us-west-2.amazonaws.com/omo_api:latest-amd64 && \
-docker push 187613313731.dkr.ecr.us-west-2.amazonaws.com/omo_api:latest-amd64
+docker build -t omo_api:v0.2.0 -f Dockerfile.local --platform linux/amd64 . && \
+docker tag omo_api:v0.2.0 187613313731.dkr.ecr.us-west-2.amazonaws.com/omo_api:v0.2.0-amd64 && \
+docker push 187613313731.dkr.ecr.us-west-2.amazonaws.com/omo_api:v0.2.0-amd64
 ```
 
 ## Deploying the Docker image

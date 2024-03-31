@@ -3,6 +3,8 @@ uvicorn==0.23.2
 atlassian-python-api==3.41.3
 llama-index==0.10.18
 llama-index-vector-stores-pinecone==0.1.4
+llama-index-storage-docstore-redis==0.1.2
+llama-index-readers-google==0.2.2
 pinecone-client==3.1.0
 pinecone-client[grpc]==3.1.0
 rlPyCairo==0.3.0
@@ -28,6 +30,10 @@ python-multipart==0.0.6
 boto3==1.34.11
 aws-secretsmanager-caching==1.1.1.5
 pyairtable==2.2.2
+docx2txt==0.8
+
+# Queues
+celery==5.3.6 # celery-director will install 5.2.6 regardless
 
 # Used for parsing PDFs, using semantic chunker text splitter
 pypdf==4.1.0
