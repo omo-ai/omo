@@ -145,7 +145,7 @@ async def answer_web(message: Message):
     return StreamingResponse(answer_question_stream(message.content),
                              media_type="application/json")
 
-
+from llama_index.core.postprocessor import MetadataReplacementPostProcessor
 async def answer_question_stream(question: str):
     Settings.llm = OpenAI(model=OPENAI_MODEL)
     Settings.embed_model = OpenAIEmbedding(model=OPENAI_EMBEDDING_MODEL)  
@@ -166,7 +166,11 @@ async def answer_question_stream(question: str):
     chat_engine = index.as_chat_engine(
         chat_mode="context",
         llm=llm,
-        streaming=True)
+        streaming=True,
+        similarity_top_k=2,
+        node_postprocessors=[
+            MetadataReplacementPostProcessor(target_metadata_key="window")
+    ],  )
 
     response = chat_engine.stream_chat(question)
 
