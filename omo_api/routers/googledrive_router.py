@@ -1,7 +1,9 @@
 import os
 import logging
+import json
 import pinecone
 from fastapi import Depends, APIRouter, Header
+from fastapi.encoders import jsonable_encoder
 from typing import List, Union, Annotated
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -39,46 +41,10 @@ router = APIRouter()
 async def process_gdrive_files(files: GoogleDriveObjects,
                                x_google_authorization: Annotated[str, Header()],
                                db: Session = Depends(get_db)):
-    
-    loader = GoogleDriveReaderOAuthAccessToken(access_token=x_google_authorization)
 
-    folders = filter(lambda f: f.type == 'folder', files.files)
-    files = filter(lambda f: f.type != 'folder', files.files)
+    result = tasks.sync_google_drive.delay(jsonable_encoder(files), x_google_authorization)
 
-    folder_ids = [f.id for f in folders]
-    file_ids = [f.id for f in files]
-
-    all_docs = []
-    for folder_id in folder_ids:
-        folder_docs = loader.load_data(folder_id=folder_id)
-        all_docs.append(folder_docs)
-
-    docs = loader.load_data(file_ids=file_ids)
-    all_docs.append(docs)
-
-    vecstore, docstore, ingestion_cache = get_stores()
-
-    Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-large")
-    Settings.llm = OpenAI(temperature=0.0, model="gpt-4-0125-preview")
-
-    pipeline = SentenceWindowPipeline(
-        docs=flatten_list(all_docs),
-        transforms=[
-            SentenceSplitter(),
-            Settings.embed_model,
-        ],
-        params = {
-            'window_size': 3,
-            'window_metadata_key': 'window',
-            'original_text_metadata_key': 'original_text',
-        },
-        vector_store=vecstore,
-        docstore=docstore,
-        cache=ingestion_cache
-        
-    )
-    nodes = pipeline.run(num_workers=1) # anything > 1 results in AttributeError: Can't pickle local object 'split_by_sentence_tokenizer.<locals>.split'
-    logger.debug(nodes)
+    return { 'result_id': result.id, 'result_ready': result.ready() }
     
 
 @router.post('/v1/googledrive/files')

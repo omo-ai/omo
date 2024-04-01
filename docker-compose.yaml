@@ -53,11 +53,12 @@ services:
     build:
       context: ./omo_api
       dockerfile: Dockerfile.local
-    command: celery -A workers worker -l info
+    command: celery -A workers.background worker -l info
     volumes:
       - ./omo_api/:/var/www/omo_api
     env_file:
       - ./omo_api/envs/.env.development
+      - "./omo_api/envs/${CUSTOMER_ENV}/.env"
     depends_on:
       - redis
 
@@ -67,11 +68,12 @@ services:
     build:
       context: ./omo_api
       dockerfile: Dockerfile.local
-    command: celery -A workers beat -l info
+    command: celery -A workers.background beat -l info
     volumes:
       - ./omo_api/:/var/www/omo_api
     env_file:
       - ./omo_api/envs/.env.development
+      - "./omo_api/envs/${CUSTOMER_ENV}/.env"
     depends_on:
       - redis
 
