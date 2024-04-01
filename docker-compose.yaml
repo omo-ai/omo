@@ -46,6 +46,34 @@ services:
     container_name: omo_redis_1
     ports:
         - '6379:6379'
+  
+  celery:
+    hostname: omo_celery_1
+    container_name: omo_celery_1
+    build:
+      context: ./omo_api
+      dockerfile: Dockerfile.local
+    command: celery -A workers worker -l info
+    volumes:
+      - ./omo_api/:/var/www/omo_api
+    env_file:
+      - ./omo_api/envs/.env.development
+    depends_on:
+      - redis
+
+  celery_beat:
+    hostname: omo_beat_1
+    container_name: omo_beat_1
+    build:
+      context: ./omo_api
+      dockerfile: Dockerfile.local
+    command: celery -A workers beat -l info
+    volumes:
+      - ./omo_api/:/var/www/omo_api
+    env_file:
+      - ./omo_api/envs/.env.development
+    depends_on:
+      - redis
 
   
   websockets:
