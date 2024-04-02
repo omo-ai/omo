@@ -1,4 +1,7 @@
+import logging
 from omo_api.db.connection import SessionLocal
+
+logger = logging.getLogger(__name__)
 
 def get_or_create(session, model, defaults=None, **kwargs):
     instance = session.query(model).filter_by(**kwargs).one_or_none()
@@ -8,9 +11,10 @@ def get_or_create(session, model, defaults=None, **kwargs):
         kwargs |= defaults or {}
         instance = model(**kwargs)
         try:
-            session.add(instance)
+            session.add(instance) # try creating the instance
             session.commit()
-        except Exception:  # The actual exception depends on the specific database so we catch all exceptions. This is similar to the official documentation: https://docs.sqlalchemy.org/en/latest/orm/session_transaction.html
+        except Exception as e:  # The actual exception depends on the specific database so we catch all exceptions. This is similar to the official documentation: https://docs.sqlalchemy.org/en/latest/orm/session_transaction.html
+            logger.debug(f"Exception in get_or_create: {e}")
             session.rollback()
             instance = session.query(model).filter_by(**kwargs).one()
             return instance, False

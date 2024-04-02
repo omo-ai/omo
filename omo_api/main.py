@@ -12,6 +12,7 @@ from omo_api.routers import (
     confluence_router,
     slack_router,
     qa,
+    account,
 )
 from omo_api.db.connection import engine
 
@@ -46,6 +47,7 @@ app.include_router(files_router.router)
 app.include_router(confluence_router.router)
 app.include_router(slack_router.router)
 app.include_router(qa.router)
+app.include_router(account.router)
 
 
 Base.metadata.create_all(bind=engine)

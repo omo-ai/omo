@@ -31,6 +31,7 @@ boto3==1.34.11
 aws-secretsmanager-caching==1.1.1.5
 pyairtable==2.2.2
 docx2txt==0.8
+python-slugify==8.0.4
 
 # Queues
 celery==5.3.6 # celery-director will install 5.2.6 regardless

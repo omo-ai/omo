@@ -5,6 +5,6 @@ from omo_api.db.models.common import CommonMixin, Base, TeamConfigMixin
 class PineconeConfig(CommonMixin, Base, TeamConfigMixin):
 
     index_name: Mapped[str]
-    api_key: Mapped[str] # hashed
+    api_key: Mapped[str] # secrets manager path; not the actual key in plaintext
     environment: Mapped[str]
     namespaces: Mapped[ARRAY] = mapped_column(ARRAY(String), default=['default'])
