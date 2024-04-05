@@ -2,9 +2,11 @@ import os
 import itertools
 import pinecone
 from pinecone import Pinecone
+from typing import List
 from llama_index.core import SimpleDirectoryReader
-from llama_index.core.node_parser import SentenceWindowNodeParser, SentenceSplitter
 from llama_index.core import Settings
+from llama_index.core.schema import Document
+from llama_index.core.node_parser import SentenceWindowNodeParser, SentenceSplitter
 from llama_index.core.ingestion import IngestionPipeline, DocstoreStrategy
 from llama_index.vector_stores.pinecone import PineconeVectorStore
 from pinecone.grpc import PineconeGRPC
@@ -15,8 +17,7 @@ from llama_index.core.storage.docstore.keyval_docstore import KVDocumentStore
 from llama_index.core.vector_stores.types import BasePydanticVectorStore
 from llama_index.core.storage.kvstore.types import BaseKVStore
 from llama_index.storage.kvstore.redis import RedisKVStore as RedisCache
-
-from omo_api.utils import get_env_var
+from omo_api.utils import get_env_var, flatten_list
 
 def get_ingestion_cache() -> BaseKVStore:
     host = get_env_var('REDIS_HOST')
@@ -98,3 +99,22 @@ class SentenceWindowPipeline:
 
         return self.nodes
     
+def get_pipeline(documents: List[Document]):
+    vecstore, docstore, ingestion_cache = get_stores()
+    pipeline = SentenceWindowPipeline(
+        docs=flatten_list(documents),
+        transforms=[
+            SentenceSplitter(),
+            Settings.embed_model,
+        ],
+        params = {
+            'window_size': 3,
+            'window_metadata_key': 'window',
+            'original_text_metadata_key': 'original_text',
+        },
+        vector_store=vecstore,
+        docstore=docstore,
+        cache=ingestion_cache
+        
+    )
+    return pipeline
