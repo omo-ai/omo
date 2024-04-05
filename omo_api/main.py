@@ -3,6 +3,9 @@ import logging
 from logging.config import dictConfig
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from llama_index.embeddings.openai import OpenAIEmbedding
+from llama_index.core import Settings
+from llama_index.llms.openai import OpenAI
 from omo_api.conf.log import log_config
 from omo_api.conf.auth0 import AUTH0_CORS_IPS
 from omo_api.routers import (
@@ -59,6 +62,10 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
+
+
+Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-large")
+Settings.llm = OpenAI(temperature=0.0, model="gpt-4-0125-preview")
 
 @app.get("/")
 async def root():

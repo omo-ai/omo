@@ -1,7 +1,5 @@
 import logging
-from llama_index.embeddings.openai import OpenAIEmbedding
-from llama_index.core import Settings
-from llama_index.llms.openai import OpenAI
+
 from omo_api.loaders.gdrive.google_drive import GoogleDriveReaderOAuthAccessToken
 from omo_api.workers.background import celery
 from omo_api.utils.pipeline import get_pipeline
@@ -27,10 +25,6 @@ def sync_google_drive(files: dict,
 
     docs = loader.load_data(file_ids=file_ids)
     all_docs.append(docs)
-
-
-    Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-large")
-    Settings.llm = OpenAI(temperature=0.0, model="gpt-4-0125-preview")
 
     pipeline = get_pipeline()
     nodes = pipeline.run(num_workers=1) # anything > 1 results in AttributeError: Can't pickle local object 'split_by_sentence_tokenizer.<locals>.split'

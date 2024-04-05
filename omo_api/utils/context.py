@@ -23,24 +23,32 @@ PINECONE_DEFAULT_INDEX = 'starter_index'
 PINECONE_DEFAULT_API_KEY = '/aws/secretsmanager/path'
 PINECONE_DEFAULT_ENV = 'gcp-starter'
 
-class SlackUserContext:
-    def __init__(self, payload: SlackMessagePayload, db: Session):
+class UserContext:
+    def __init__(self, db: Session):
         self.context = {
-            'omo_slack_profile_id': None,
             'omo_user_id': None,
             'omo_team_id': None,
             'omo_team_config_id': None,
             'omo_pinecone_index': PINECONE_DEFAULT_INDEX,
             'omo_pinecone_api_key': PINECONE_DEFAULT_API_KEY,
             'omo_pinecone_env': PINECONE_DEFAULT_ENV,
-            'slack_team_id': None,
-            'slack_user_id': None,
         }
-        self.msg_payload = payload
         self.db = db
 
     def get_context(self):
         return self.context
+
+class SlackUserContext(UserContext):
+    def __init__(self, payload: SlackMessagePayload):
+
+        super().__init__()
+
+        self.context.update({
+            'omo_slack_profile_id': None,
+            'slack_team_id': None,
+            'slack_user_id': None,
+        })
+        self.msg_payload = payload
     
     def slack_profile_context(self):
         slack_kwargs = {
