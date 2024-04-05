@@ -1,21 +1,17 @@
-import os
 import logging
-from datetime import timedelta
-from typing import Annotated, Optional, Union
-from fastapi import Depends, APIRouter, status, HTTPException 
-from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy import select
+from typing import Any
+from slugify import slugify
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import MultipleResultsFound
 from omo_api.db.utils import get_db, get_or_create
-from omo_api.models.user import UserRegister, Token
+from omo_api.models.user import UserRegister
 from omo_api.db.models import User, Team, TeamConfig, PineconeConfig
 from omo_api.utils import get_env_var
-from slugify import slugify
+from omo_api.utils.constants import *
 
 logger = logging.getLogger(__name__) 
 
 router = APIRouter()
+
 
 @router.post('/v1/user/register')
 async def register_user(user: UserRegister, db: Session = Depends(get_db)):
@@ -35,6 +31,37 @@ async def register_user(user: UserRegister, db: Session = Depends(get_db)):
     response_msg = f"User {user.email} registered. Created: {created}"
 
     return response_msg
+
+def get_installed_apps(user: User):
+    installed_apps = {}
+    for app in AVAILABLE_APPS + AVAILABLE_VECTOR_STORES:
+        app_configs = getattr(user.team.team_config, f"{app}_configs")
+        # user has existing configs i.e. it's intalled
+        if not app_configs:
+            continue
+
+        # TODO we probably want to instantiate into response models
+        # to control what attributes are sent to the client.
+        # get all the columns but delete this key.
+        installed_apps[app] = [app_configs.__dict__.pop('_sa_instance_state', None) for app_configs in app_configs]
+
+    return installed_apps
+
+
+def get_user_by_email(email: str, db: Session) -> User:
+    try:
+        user = db.query(User).filter_by(email=email).one()
+    except Exception as e:
+        logger.debug(f"Exception in get_user: {e}")
+        return { 'status': 'error', 'msg': e }
+    return user
+
+@router.get('/v1/user/', 
+            response_model_include={'email', 'created_at', 'updated_at',
+                                    'is_active', 'last_login'})
+async def get_user(email: str, db: Session = Depends(get_db)) -> Any:
+    return get_user_by_email(email, db)
+    
 
 def create_team(user: User, db: Session = Depends(get_db)):
     team_attr = {
