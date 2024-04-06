@@ -35,3 +35,21 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     username: str
+
+class VectorStoreContext(BaseModel):
+    id: int
+    index_name: str
+    environment: str
+    namespaces: list[str]
+    created_at: datetime
+    updated_at: datetime
+    provider: str
+
+class UserContext(BaseModel):
+    email: str
+    updated_at: str
+    is_active: bool
+    team_id: int
+    created_at: datetime
+    connectors: list
+    vector_store: VectorStoreContext
