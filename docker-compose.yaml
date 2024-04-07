@@ -53,7 +53,7 @@ services:
     build:
       context: ./omo_api
       dockerfile: Dockerfile.local
-    command: celery -A workers.background worker -l info
+    command: celery -A workers.background worker -l debug
     volumes:
       - ./omo_api/:/var/www/omo_api
     env_file:
@@ -68,7 +68,7 @@ services:
     build:
       context: ./omo_api
       dockerfile: Dockerfile.local
-    command: celery -A workers.background beat -l info
+    command: celery -A workers.background beat -l debug
     volumes:
       - ./omo_api/:/var/www/omo_api
     env_file:

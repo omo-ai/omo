@@ -1,19 +1,21 @@
 import logging
-
+from sqlalchemy.orm import Session
+from celery.utils.log import get_task_logger
 from omo_api.loaders.gdrive.google_drive import GoogleDriveReaderOAuthAccessToken
 from omo_api.workers.background import celery
 from omo_api.utils.pipeline import get_pipeline
+from omo_api.models.user import UserContext
 
-logger = logging.getLogger(__name__) 
+logger = get_task_logger(__name__) 
 
 @celery.task
-def sync_google_drive(files: dict,
-                      access_token: str):
+def sync_google_drive(files: dict, user_context: dict, access_token: str):
 
     loader = GoogleDriveReaderOAuthAccessToken(access_token=access_token)
+    context = UserContext(**user_context)
 
-    folders = filter(lambda f: f['type'] == 'folder', files['files'])
-    files = filter(lambda f: f['type'] != 'folder', files['files'])
+    folders = filter(lambda f: f['type'] == 'folder', files)
+    files = filter(lambda f: f['type'] != 'folder', files)
 
     folder_ids = [f['id'] for f in folders]
     file_ids = [f['id'] for f in files]
@@ -26,7 +28,12 @@ def sync_google_drive(files: dict,
     docs = loader.load_data(file_ids=file_ids)
     all_docs.append(docs)
 
-    pipeline = get_pipeline()
+    # get the vector store info based on User (fetch from server side)
+    # pass into get pipeline and init pinecone
+    index = context.vector_store.index_name
+    namespace = context.vector_store.namespaces[0] # currently user only has one namespace
+    logger.info(f"writing to index:namespace {index}:{namespace}")
+    # note namespaces are created automatically if it doesn't exist
+    pipeline = get_pipeline(all_docs, index, namespace)
     nodes = pipeline.run(num_workers=1) # anything > 1 results in AttributeError: Can't pickle local object 'split_by_sentence_tokenizer.<locals>.split'
     logger.debug(nodes)
-

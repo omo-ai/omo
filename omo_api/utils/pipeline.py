@@ -1,7 +1,5 @@
 import os
 import itertools
-import pinecone
-from pinecone import Pinecone
 from typing import List
 from llama_index.core import SimpleDirectoryReader
 from llama_index.core import Settings
@@ -17,6 +15,8 @@ from llama_index.core.storage.docstore.keyval_docstore import KVDocumentStore
 from llama_index.core.vector_stores.types import BasePydanticVectorStore
 from llama_index.core.storage.kvstore.types import BaseKVStore
 from llama_index.storage.kvstore.redis import RedisKVStore as RedisCache
+from llama_index.embeddings.openai import OpenAIEmbedding
+from llama_index.llms.openai import OpenAI
 from omo_api.utils import get_env_var, flatten_list
 
 def get_ingestion_cache() -> BaseKVStore:
@@ -51,10 +51,10 @@ def get_vector_store(api_key: str, index_name: str, namespace: str) -> BasePydan
 
     return vector_store
 
-def get_stores():
+def get_stores(vecstore_index: str, namespace: str):
     vector_store = get_vector_store(api_key=get_env_var('PINECONE_API_KEY'),
-                                   index_name=get_env_var('PINECONE_INDEX'),
-                                   namespace=get_env_var('PINECONE_NS'))
+                                   index_name=vecstore_index,
+                                   namespace=namespace)
     docstore = get_doc_store()
     ingestion_cache = get_ingestion_cache()
 
@@ -67,6 +67,22 @@ def chunks(iterable, batch_size=100):
     while chunk:
         yield chunk
         chunk = tuple(itertools.islice(it, batch_size))
+
+def get_embedding_model():
+    llm = get_env_var('LLM').lower()
+
+    if llm == 'openai':
+        return OpenAIEmbedding(model=get_env_var('OPENAI_EMBEDDING_MODEL'))
+
+    raise NotImplementedError('Embedding model not implemented yet')
+
+def get_chat_model():
+    llm = get_env_var('LLM').lower()
+
+    if llm == 'openai':
+        return OpenAI(temperature=0.0, model=get_env_var('OPENAI_MODEL'))
+    
+    raise NotImplementedError('Chat model not implemented yet')
 
 class SentenceWindowPipeline:
     def __init__(self,
@@ -96,16 +112,16 @@ class SentenceWindowPipeline:
     def run(self, num_workers: int = 4):
         nodes = self.pipeline.run(documents=self.docs, num_workers=num_workers)
         self.nodes = nodes
-
-        return self.nodes
+        return nodes
     
-def get_pipeline(documents: List[Document]):
-    vecstore, docstore, ingestion_cache = get_stores()
+def get_pipeline(documents: List[Document], vectore_index: str, namespace: str):
+    vecstore, docstore, ingestion_cache = get_stores(vecstore_index=vectore_index,
+                                                     namespace=namespace)
     pipeline = SentenceWindowPipeline(
         docs=flatten_list(documents),
         transforms=[
             SentenceSplitter(),
-            Settings.embed_model,
+            get_embedding_model(),
         ],
         params = {
             'window_size': 3,

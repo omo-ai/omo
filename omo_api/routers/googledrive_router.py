@@ -19,11 +19,10 @@ async def process_gdrive_files(files: List[GoogleDriveObject],
                                user_context: UserContext,
                                x_google_authorization: Annotated[str, Header()]):
 
-    logger.debug('files', files)
     result = tasks.sync_google_drive.delay(
         jsonable_encoder(files),
         jsonable_encoder(user_context),
-        x_google_authorization,
+        x_google_authorization
     )
 
     return { 'result_id': result.id, 'result_ready': result.ready() }
