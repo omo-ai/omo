@@ -6,7 +6,7 @@ IMAGE=omo_celery_beat
 
 echo "Building celery beat Docker image..."
 
-docker build -t $IMAGE:$TAG-amd64 -f docker/Dockerfile.celerybeat --platform linux/amd64 .
+docker build -t $IMAGE:$TAG-amd64 -f docker/Dockerfile.celerybeat --platform linux/amd64 ../
 
 docker tag $IMAGE:$TAG-amd64 $ECR_URL/$IMAGE:$TAG-amd64
 

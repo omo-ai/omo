@@ -7,7 +7,7 @@ IMAGE=omo_celery
 echo "building with params $ECR_URL $TAG"
 echo "Building Celery Docker image..."
 
-docker build -t $IMAGE:$TAG-amd64 -f docker/Dockerfile.celery --platform linux/amd64 .
+docker build -t $IMAGE:$TAG-amd64 -f docker/Dockerfile.celery --platform linux/amd64 ..
 
 docker tag $IMAGE:$TAG-amd64 $ECR_URL/$IMAGE:$TAG-amd64
 

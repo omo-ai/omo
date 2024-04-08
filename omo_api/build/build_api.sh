@@ -6,7 +6,7 @@ IMAGE=omo_api
 
 echo "Building API Docker image..."
 
-docker build -t $IMAGE:$TAG-amd64 -f docker/Dockerfile.api --platform linux/amd64 .
+docker build -t $IMAGE:$TAG-amd64 -f docker/Dockerfile.api --platform linux/amd64 ..
 
 docker tag $IMAGE:$TAG-amd64 $ECR_URL/$IMAGE:$TAG-amd64
 
