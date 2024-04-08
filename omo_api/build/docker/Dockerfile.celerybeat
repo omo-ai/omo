@@ -1,0 +1,13 @@
+FROM python:3.11-slim-bullseye
+
+WORKDIR /var/www/omo_api
+
+COPY . /var/www/omo_api/
+
+ENV PYTHONPATH "${PYTHONPATH}:/var/www/"
+
+RUN apt update && apt install -y tesseract-ocr libcairo2-dev pkg-config python3-dev gcc vim
+
+RUN pip install --no-cache-dir -r /var/www/omo_api/requirements.txt
+
+CMD ["celery", "-A", "workers.background", "beat", "-l", "debug"]
