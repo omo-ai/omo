@@ -7,20 +7,21 @@ import asyncio
 from typing import List
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
+from pinecone.grpc import PineconeGRPC
+from llama_index.core import VectorStoreIndex
+from llama_index.vector_stores.pinecone import PineconeVectorStore
+from llama_index.core import Settings
+from llama_index.core.postprocessor import MetadataReplacementPostProcessor
+from llama_index.vector_stores.pinecone import PineconeVectorStore
 from langchain.chains.qa_with_sources.loading import load_qa_with_sources_chain
 from langchain.chains.qa_with_sources.retrieval import RetrievalQAWithSourcesChain
 from langchain_openai import OpenAIEmbeddings
-from llama_index.vector_stores.pinecone import PineconeVectorStore
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain.docstore.document import Document
 from omo_api.models.chat import Message
+from omo_api.utils.pipeline import get_chat_model, get_embedding_model, get_vector_store
+from omo_api.models.user import UserContext
 
-from llama_index.core import VectorStoreIndex
-from llama_index.vector_stores.pinecone import PineconeVectorStore
-from llama_index.llms.openai import OpenAI
-from pinecone.grpc import PineconeGRPC
-from llama_index.embeddings.openai import OpenAIEmbedding
-from llama_index.core import Settings
 
 logger = logging.getLogger(__name__)
 
@@ -142,25 +143,26 @@ def sources_from_response(response):
 @router.post('/api/v1/chat/')
 async def answer_web(message: Message):
     # TODO the context should be provided by the frontend
-    return StreamingResponse(answer_question_stream(message.content),
+    return StreamingResponse(answer_question_stream(message.content,
+                                                    message.user_context),
                              media_type="application/json")
 
-from llama_index.core.postprocessor import MetadataReplacementPostProcessor
-async def answer_question_stream(question: str):
-    Settings.llm = OpenAI(model=OPENAI_MODEL)
-    Settings.embed_model = OpenAIEmbedding(model=OPENAI_EMBEDDING_MODEL)  
 
-    # These will be customer / context specific
+async def answer_question_stream(question: str, user_context: UserContext):
+
+    llm = get_chat_model()
+    # no other way to locally use the embedding model
+    Settings.embed_model = get_embedding_model()
+    
+    # TODO make this vector store agnostic
     pc_api_key = os.environ['PINECONE_API_KEY']
-    pc_ns = os.environ['PINECONE_NS']
-    pc_host = os.getenv('PINECONE_HOST')
 
-    pc = PineconeGRPC(api_key=pc_api_key)
-    pinecone_index = pc.Index(host=pc_host)
-  
-    vector_store = PineconeVectorStore(pinecone_index=pinecone_index, namespace=pc_ns)
+    vector_store = get_vector_store(
+        pc_api_key,
+        user_context.vector_store.index_name,
+        user_context.vector_store.namespaces[0])
+
     index = VectorStoreIndex.from_vector_store(vector_store)
-    llm = OpenAI(model=OPENAI_MODEL, temperature=0)
 
     # default 3000 token memory
     chat_engine = index.as_chat_engine(
