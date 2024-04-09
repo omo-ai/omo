@@ -24,7 +24,7 @@ def create_team(user: User, db: Session = Depends(get_db)):
     }
     team, created = get_or_create(db, Team, **team_attr)
     try:
-        user.team_id = team.team_id
+        user.team_id = team.id
         db.add(user)
         db.commit()
     except Exception as e:
@@ -45,7 +45,7 @@ def create_vecstore_config(user: User, team_config: TeamConfig, db: Session = De
     pinecone_kwargs = {
         'index_name': get_env_var('PINECONE_INDEX'),
         'environment': get_env_var('PINECONE_ENV'),
-        'api_key': get_env_var('PINECONE_API_KEY_PATH'),
+        'api_key': get_env_var('PINECONE_AWS_SECRETS_PATH'),
         'namespaces': [slugify(user.email)],
         'team_config_id': team_config.id,
     }
@@ -103,12 +103,14 @@ def get_user_team(user: User) -> dict:
 async def register_user(user: UserRegister, db: Session = Depends(get_db)) -> dict:
     user_attr = {
         'email': user.email,
+    }
+    defaults = {
         'username': None,
         'hashed_password': 'NOT_SET',
         'is_active': True
     }
 
-    user, created = get_or_create(db, User, **user_attr)
+    user, created = get_or_create(db, User, defaults=defaults, **user_attr)
         
     team = create_team(user, db)
     team_config = create_teamconfig(team, db)

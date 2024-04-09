@@ -13,7 +13,7 @@ def get_or_create(session, model, defaults=None, **kwargs):
         try:
             session.add(instance) # try creating the instance
             session.commit()
-        except Exception as e:  # The actual exception depends on the specific database so we catch all exceptions. This is similar to the official documentation: https://docs.sqlalchemy.org/en/latest/orm/session_transaction.html
+        except Exception as e:
             logger.debug(f"Exception in get_or_create: {e}")
             session.rollback()
             instance = session.query(model).filter_by(**kwargs).one() # TODO revisit this section
