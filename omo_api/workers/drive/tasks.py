@@ -19,8 +19,6 @@ def sync_google_drive(files: dict, user_context: dict, access_token: str):
     folders = filter(lambda f: f['type'] == 'folder', files)
     files = filter(lambda f: f['type'] != 'folder', files)
 
-    logger.info(f"...num folders: {len(folders)}. num files: {len(files)}")
-
     folder_ids = [f['id'] for f in folders]
     file_ids = [f['id'] for f in files]
 
