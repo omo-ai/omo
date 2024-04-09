@@ -21,6 +21,8 @@ docker push 187613313731.dkr.ecr.us-west-2.amazonaws.com/omo_api:v0.2.0-amd64
 ## Deploying the Docker image
 ```
 kubectl rollout restart deployment omo-api
+kubectl rollout restart deployment omo-celery
+kubectl rollout restart deployment omo-celerybeat
 ```
 
 ## Troubleshooting

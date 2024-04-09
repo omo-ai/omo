@@ -1,4 +1,5 @@
 import os
+import logging
 import itertools
 from typing import List
 from llama_index.core import SimpleDirectoryReader
@@ -19,25 +20,21 @@ from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.llms.openai import OpenAI
 from omo_api.utils import get_env_var, flatten_list
 
-def get_ingestion_cache() -> BaseKVStore:
-    host = get_env_var('REDIS_HOST')
-    port = get_env_var('REDIS_PORT')
+logger = logging.getLogger(__name__)
 
-    cache = RedisCache.from_host_and_port(
-        host=host, port=port
-    )
-
+def get_ingestion_cache() -> RedisCache:
+    url = get_env_var('REDIS_URL')
+    cache = RedisCache(url)
+    logger.info("Instantiated ingestion cache")
+    
     return cache
 
 
-def get_doc_store() -> KVDocumentStore:
+def get_doc_store() -> RedisDocumentStore:
 
-    host = get_env_var('REDIS_HOST')
-    port = get_env_var('REDIS_PORT')
-
-    doc_store = RedisDocumentStore.from_host_and_port(
-        host=host, port=port, namespace='llama_index'
-    )
+    cache = get_ingestion_cache()
+    doc_store = RedisDocumentStore(cache, namespace='llama_index')
+    logger.info("Instantiated docstore")
 
     return doc_store
 
@@ -49,6 +46,8 @@ def get_vector_store(api_key: str, index_name: str, namespace: str) -> BasePydan
         namespace=namespace
     )
 
+    logger.info("Instatiated vecstore")
+
     return vector_store
 
 def get_stores(vecstore_index: str, namespace: str):
@@ -57,6 +56,8 @@ def get_stores(vecstore_index: str, namespace: str):
                                    namespace=namespace)
     docstore = get_doc_store()
     ingestion_cache = get_ingestion_cache()
+
+    logger.info("Instantiated all stores")
 
     return vector_store, docstore, ingestion_cache
     
@@ -74,6 +75,8 @@ def get_embedding_model():
     if llm == 'openai':
         return OpenAIEmbedding(model=get_env_var('OPENAI_EMBEDDING_MODEL'))
 
+    logger.info(f"got embedding model for LLM {llm}")
+
     raise NotImplementedError('Embedding model not implemented yet')
 
 def get_chat_model():
@@ -81,6 +84,8 @@ def get_chat_model():
 
     if llm == 'openai':
         return OpenAI(temperature=0.0, model=get_env_var('OPENAI_MODEL'))
+
+    logger.info(f"got chat model for LLM {llm}")
     
     raise NotImplementedError('Chat model not implemented yet')
 
@@ -110,9 +115,12 @@ class SentenceWindowPipeline:
         )
 
     def run(self, num_workers: int = 4):
-        nodes = self.pipeline.run(documents=self.docs, num_workers=num_workers)
-        self.nodes = nodes
-        return nodes
+        try:
+            nodes = self.pipeline.run(documents=self.docs, num_workers=num_workers)
+            self.nodes = nodes
+            return nodes
+        except Exception as e:
+            logger.error(f"***Exception indexing documents: {e}***")
     
 def get_pipeline(documents: List[Document], vectore_index: str, namespace: str):
     vecstore, docstore, ingestion_cache = get_stores(vecstore_index=vectore_index,
@@ -133,4 +141,5 @@ def get_pipeline(documents: List[Document], vectore_index: str, namespace: str):
         cache=ingestion_cache
         
     )
+    logger.info(f"got pipeline")
     return pipeline
