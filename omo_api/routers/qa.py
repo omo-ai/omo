@@ -91,6 +91,8 @@ def sources_from_response(response):
             'file_name': 'file.pdf',
             'file_path': '/path/to/file.pdf',
             'page_labels': [12, 34],
+            'creation_date': timestamp,
+            'last_modified_date': timestamp,
         }
     }
     """
@@ -105,7 +107,7 @@ def sources_from_response(response):
             continue
 
         file_name = source.metadata.get('file_name', None)
-        file_type = source.metadata.get('file_type', None)
+        mimetype = source.metadata.get('mimetype', None)
         creation_date = source.metadata.get('creation_date', None)
         last_modified_date = source.metadata.get('last_modified_date', None)
 
@@ -118,7 +120,7 @@ def sources_from_response(response):
 
         sources[file_path]['file_name'] = file_name or file_path
         sources[file_path]['file_path'] = file_path
-        sources[file_path]['file_type'] = file_type
+        sources[file_path]['mimetype'] = mimetype
         sources[file_path]['creation_date'] = creation_date 
         sources[file_path]['last_modified_date'] = last_modified_date 
 

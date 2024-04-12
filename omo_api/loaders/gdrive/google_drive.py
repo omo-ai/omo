@@ -104,10 +104,8 @@ class GoogleDriveReaderOAuthAccessToken(BasePydanticReader):
         creds = None
 
         if self.access_token:
-            logger.debug(f"*****ACCESS TOKEN*******\n{self.access_token}")
             creds = Credentials(self.access_token)
 
-        logger.debug(f"*****NO TOKEN*******\n{self.access_token}")
         return creds
 
     def _get_fileids_meta(
@@ -222,6 +220,7 @@ class GoogleDriveReaderOAuthAccessToken(BasePydanticReader):
                                 item["mimeType"],
                                 item["createdTime"],
                                 item["modifiedTime"],
+                                item["webViewLink"],
                             )
                         )
             else:
@@ -248,6 +247,7 @@ class GoogleDriveReaderOAuthAccessToken(BasePydanticReader):
                         file["mimeType"],
                         file["createdTime"],
                         file["modifiedTime"],
+                        file["webViewLink"],
                     )
                 )
             return fileids_meta
@@ -314,7 +314,7 @@ class GoogleDriveReaderOAuthAccessToken(BasePydanticReader):
             fileids_meta: metadata of fileids in google drive.
 
         Returns:
-            Lis[Document]: List of Document of data present in fileids.
+            List[Document]: List of Document of data present in fileids.
         """
         try:
             with tempfile.TemporaryDirectory() as temp_dir:
@@ -333,12 +333,13 @@ class GoogleDriveReaderOAuthAccessToken(BasePydanticReader):
 
                     # Add metadata of the file to metadata dictionary
                     metadata[final_filepath] = {
-                        "file id": fileid_meta[0],
+                        "file_id": fileid_meta[0],
                         "author": fileid_meta[1],
-                        "file name": fileid_meta[2],
-                        "mime type": fileid_meta[3],
-                        "created at": fileid_meta[4],
-                        "modified at": fileid_meta[5],
+                        "file_name": fileid_meta[2],
+                        "mimetype": fileid_meta[3],
+                        "creation_date": fileid_meta[4],
+                        "last_modified_date": fileid_meta[5],
+                        "source": fileid_meta[6],
                     }
                 loader = SimpleDirectoryReader(temp_dir, file_metadata=get_metadata)
                 documents = loader.load_data()
