@@ -1,6 +1,5 @@
 fastapi==0.104.1
 uvicorn==0.23.2
-atlassian-python-api==3.41.3
 llama-index==0.10.18
 llama-index-vector-stores-pinecone==0.1.4
 llama-index-storage-docstore-redis==0.1.2
@@ -22,6 +21,7 @@ slack_sdk==3.26.1
 slack_bolt==1.18.0
 psycopg2-binary==2.9.9
 SQLAlchemy==2.0.23
+sqlalchemy-json==0.7.0
 sqlalchemy-utils==0.41.1
 alembic==1.13.0
 python-jose[cryptography]==3.3.0
@@ -29,16 +29,19 @@ passlib[bcrypt]==1.7.4
 python-multipart==0.0.6
 boto3==1.34.11
 aws-secretsmanager-caching==1.1.1.5
+python-slugify==8.0.4
+
+#connectors
 pyairtable==2.2.2
 docx2txt==0.8
-python-slugify==8.0.4
+atlassian-python-api==3.41.3
+# Used for parsing PDFs, using semantic chunker text splitter
+pypdf==4.1.0
+rapidocr-onnxruntime==1.3.14
 
 # Queues
 celery==5.3.6 # celery-director will install 5.2.6 regardless
 
-# Used for parsing PDFs, using semantic chunker text splitter
-pypdf==4.1.0
-rapidocr-onnxruntime==1.3.14
 
 # deprecated
 langchain==0.1.11

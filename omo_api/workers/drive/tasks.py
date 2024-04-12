@@ -1,15 +1,26 @@
 import logging
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 from celery.utils.log import get_task_logger
 from omo_api.loaders.gdrive.google_drive import GoogleDriveReaderOAuthAccessToken
 from omo_api.workers.background import celery
 from omo_api.utils.pipeline import get_pipeline
 from omo_api.models.user import UserContext
+from omo_api.db.models.googledrive import GoogleDriveConfig
+from omo_api.db.connection import session
 
 logger = get_task_logger(__name__) 
 
 @celery.task
 def sync_google_drive(files: dict, user_context: dict, access_token: str):
+
+    def update_db(files: dict, user_context: UserContext):
+        files_list = [{f['id']: f} for f in files]
+        stmt = update(GoogleDriveConfig)\
+                .where(UserContext.team_id == user_context.team_id)\
+                .values(files=GoogleDriveConfig.files + files_list) # append files
+        result = session.execute(stmt)
+        session.commit()
 
     loader = GoogleDriveReaderOAuthAccessToken(access_token=access_token)
     context = UserContext(**user_context)
@@ -41,3 +52,11 @@ def sync_google_drive(files: dict, user_context: dict, access_token: str):
     nodes = pipeline.run(num_workers=1) # anything > 1 results in AttributeError: Can't pickle local object 'split_by_sentence_tokenizer.<locals>.split'
     logger.debug(nodes)
     logger.info(f"...Done indexing for user: {context.email}")
+
+    logger.info("updating db...")
+    update_db(files, context)
+
+
+
+        
+            
