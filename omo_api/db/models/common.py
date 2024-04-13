@@ -25,11 +25,3 @@ class CommonMixin:
 class TeamMixin:
 
     team_id: Mapped[int] = mapped_column(ForeignKey("team.id"), nullable=True)
-
-class TeamConfigMixin:
-
-    team_config_id: Mapped[int] = mapped_column(ForeignKey("teamconfig.id"), nullable=True)
-
-    @declared_attr
-    def team_configs(cls) -> Mapped["TeamConfig"]:
-        return relationship("TeamConfig")

@@ -1,8 +1,8 @@
 from sqlalchemy.orm import mapped_column, Mapped
 from sqlalchemy import ARRAY, String
-from omo_api.db.models.common import CommonMixin, Base, TeamConfigMixin
+from omo_api.db.models.common import CommonMixin, Base, TeamMixin
 
-class PineconeConfig(CommonMixin, Base, TeamConfigMixin):
+class PineconeConfig(CommonMixin, Base, TeamMixin):
 
     index_name: Mapped[str]
     api_key: Mapped[str] # secrets manager path; not the actual key in plaintext

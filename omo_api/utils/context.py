@@ -9,7 +9,7 @@ from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from omo_api.models.slack import SlackMessagePayload
 from omo_api.db.utils import get_or_create, get_db
 from omo_api.db.models.slack import SlackProfile
-from omo_api.db.models.user import User, Team, TeamConfig
+from omo_api.db.models.user import User, Team
 from omo_api.db.models.pinecone import PineconeConfig
 from omo_api.utils.auth import get_aws_secret
 
@@ -112,31 +112,6 @@ class SlackUserContext(UserContext):
 
         return team
 
-    def team_config_context(self, team: Team):
-        """
-        Create a TeamConfig object with FK to the team that was
-        selected earlier
-        """
-        team_config = None
-        try:
-            if not team.team_config:
-                team_config = TeamConfig(**{
-                    'team_id': team.id
-                })
-                self.db.add(team_config)
-                self.db.commit()
-                self.context['omo_team_config_id'] = team_config.id
-            else:
-                self.context['omo_team_config_id'] = team.team_config.id
-                team_config = team.team_config
-        
-        except Exception as e:
-            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-            message = template.format(type(e).__name__, e.args)
-            logger.debug(f"Exception setting team_config: {message}")
-
-        return team_config
-
     def pinecone_context(self, team: Team):
         """
         Set the Pinecone Config for the user
@@ -224,7 +199,6 @@ async def get_slack_user_context(body: SlackMessagePayload,
     team = ctx.team_context()
     
     if team:
-        team_config_ctx = ctx.team_config_context(team)
         pinecone_ctx = ctx.pinecone_context(team)
 
         if slack_profile:

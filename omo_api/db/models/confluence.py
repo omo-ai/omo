@@ -1,12 +1,10 @@
-from typing import List, Optional
-from sqlalchemy.sql import func
-from sqlalchemy import ForeignKey, String, Integer, BigInteger, Date, DateTime
+from typing import List
+from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from omo_api.db.models.common import TeamConfigMixin
 
 from omo_api.db.models.common import Base, CommonMixin, TeamMixin
 
-class AtlassianConfig(CommonMixin, Base, TeamConfigMixin):
+class AtlassianConfig(CommonMixin, Base, TeamMixin):
 
     username: Mapped[str]
     api_key: Mapped[str] # hashed

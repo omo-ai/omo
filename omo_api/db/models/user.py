@@ -27,13 +27,7 @@ class Team(Base, CommonMixin):
 
     slack_team_id: Mapped[str] = mapped_column(nullable=True)
     users: Mapped[List['User']] = relationship(back_populates='team')
-    team_config: Mapped['TeamConfig'] = relationship(back_populates='team')
 
-class TeamConfig(CommonMixin, Base):
-    
-    atlassian_configs: Mapped[List['AtlassianConfig']] = relationship(back_populates='team_configs')
-    gdrive_configs: Mapped[List['GoogleDriveConfig']] = relationship(back_populates='team_configs')
-    pinecone_configs: Mapped[List['PineconeConfig']] = relationship(back_populates='team_configs')
-
-    team_id: Mapped[int] = mapped_column(ForeignKey('team.id'))
-    team: Mapped['Team'] = relationship(back_populates='team_config')
+    atlassian_configs: Mapped[List['AtlassianConfig']] = relationship(back_populates='team')
+    gdrive_configs: Mapped[List['GoogleDriveConfig']] = relationship(back_populates='team')
+    pinecone_configs: Mapped[List['PineconeConfig']] = relationship(back_populates='team')

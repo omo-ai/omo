@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import NoResultFound
 from omo_api.db.utils import get_db, get_or_create
 from omo_api.models.user import UserRegister
-from omo_api.db.models import User, Team, TeamConfig, PineconeConfig
+from omo_api.db.models import User, Team, PineconeConfig
 from omo_api.utils import get_env_var
 from omo_api.utils.vector_store import *
 
@@ -33,21 +33,14 @@ def create_team(user: User, db: Session = Depends(get_db)):
 
     return team
 
-def create_teamconfig(team: Team, db: Session = Depends(get_db)):
-    teamconfig_attrs = {
-        'team_id': team.id
-    }
-    teamconfig, created = get_or_create(db, TeamConfig, **teamconfig_attrs)
-    return teamconfig
 
-
-def create_vecstore_config(user: User, team_config: TeamConfig, db: Session = Depends(get_db)):
+def create_vecstore_config(user: User, team: Team, db: Session = Depends(get_db)):
     pinecone_kwargs = {
         'index_name': get_env_var('PINECONE_INDEX'),
         'environment': get_env_var('PINECONE_ENV'),
         'api_key': get_env_var('PINECONE_AWS_SECRETS_PATH'),
         'namespaces': [slugify(user.email)],
-        'team_config_id': team_config.id,
+        'team_id': team.id,
     }
 
     vecstore_config, created = get_or_create(db, PineconeConfig, **pinecone_kwargs)
@@ -113,8 +106,7 @@ async def register_user(user: UserRegister, db: Session = Depends(get_db)) -> di
     user, created = get_or_create(db, User, defaults=defaults, **user_attr)
         
     team = create_team(user, db)
-    team_config = create_teamconfig(team, db)
-    pc_config = create_vecstore_config(user, team_config, db)
+    pc_config = create_vecstore_config(user, team, db)
 
     response = {
         "message": f"User {user.email} registered.",
