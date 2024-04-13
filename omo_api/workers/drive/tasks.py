@@ -1,5 +1,5 @@
 import json
-from sqlalchemy import update
+from sqlalchemy import update, select, func
 from celery.utils.log import get_task_logger
 from omo_api.loaders.gdrive.google_drive import GoogleDriveReaderOAuthAccessToken
 from omo_api.workers.background import celery
@@ -14,10 +14,10 @@ logger = get_task_logger(__name__)
 def sync_google_drive(files: dict, user_context: dict, access_token: str):
 
     def update_db(files: dict, user_ctx: UserContext):
-        files_list = {f['id']: f for f in files}
+        files_dict = {f['id']: f for f in files}
         stmt = update(GoogleDriveConfig)\
                 .where(GoogleDriveConfig.team_id == user_ctx.team_id)\
-                .values(files=files_list) # append files
+                .values(files=GoogleDriveConfig.files + files_dict) # append files
         result = session.execute(stmt)
         session.commit()
 
