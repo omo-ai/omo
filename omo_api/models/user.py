@@ -45,11 +45,15 @@ class VectorStoreContext(BaseModel):
     updated_at: datetime
     provider: str
 
+class ConnectorContext(BaseModel):
+    name: str
+    id: List[int]
+
 class UserContext(BaseModel):
     email: str
     updated_at: str
     is_active: bool
     team_id: int
     created_at: datetime
-    connectors: list
+    connectors: List[ConnectorContext]
     vector_store: VectorStoreContext

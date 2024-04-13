@@ -1,6 +1,5 @@
-import logging
+import json
 from sqlalchemy import update
-from sqlalchemy.orm import Session
 from celery.utils.log import get_task_logger
 from omo_api.loaders.gdrive.google_drive import GoogleDriveReaderOAuthAccessToken
 from omo_api.workers.background import celery
@@ -14,11 +13,11 @@ logger = get_task_logger(__name__)
 @celery.task
 def sync_google_drive(files: dict, user_context: dict, access_token: str):
 
-    def update_db(files: dict, user_context: UserContext):
-        files_list = [{f['id']: f} for f in files]
+    def update_db(files: dict, user_ctx: UserContext):
+        files_list = {f['id']: f for f in files}
         stmt = update(GoogleDriveConfig)\
-                .where(GoogleDriveConfig.team_id == user_context.team_id)\
-                .values(files=GoogleDriveConfig.files + files_list) # append files
+                .where(GoogleDriveConfig.team_id == user_ctx.team_id)\
+                .values(files=files_list) # append files
         result = session.execute(stmt)
         session.commit()
 
@@ -28,7 +27,7 @@ def sync_google_drive(files: dict, user_context: dict, access_token: str):
     logger.info(f"indexing for user: {context.email}...")
 
     folders = filter(lambda f: f['type'] == 'folder', files)
-    files = filter(lambda f: f['type'] != 'folder', files)
+    files = list(filter(lambda f: f['type'] != 'folder', files))
 
     folder_ids = [f['id'] for f in folders]
     file_ids = [f['id'] for f in files]

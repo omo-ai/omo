@@ -49,7 +49,7 @@ def create_vecstore_config(user: User, team: Team, db: Session = Depends(get_db)
 
 def get_installed_connectors(user: User) -> dict:
     installed_connectors = {
-        'connectors': {}
+        'connectors': []
     }
     for app in AVAILABLE_APPS:
         app_configs = getattr(user.team, f"{app}_configs")
@@ -57,7 +57,7 @@ def get_installed_connectors(user: User) -> dict:
         if not app_configs:
             continue
 
-        installed_connectors['connectors'][app] = [app_config.id for app_config in app_configs]
+        installed_connectors['connectors'].append({ 'name': app, 'id': [app_config.id for app_config in app_configs]})
 
     return installed_connectors
 
