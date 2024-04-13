@@ -17,7 +17,7 @@ def sync_google_drive(files: dict, user_context: dict, access_token: str):
     def update_db(files: dict, user_context: UserContext):
         files_list = [{f['id']: f} for f in files]
         stmt = update(GoogleDriveConfig)\
-                .where(UserContext.team_id == user_context.team_id)\
+                .where(GoogleDriveConfig.team_id == user_context.team_id)\
                 .values(files=GoogleDriveConfig.files + files_list) # append files
         result = session.execute(stmt)
         session.commit()

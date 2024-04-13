@@ -10,7 +10,7 @@ class AtlassianConfig(CommonMixin, Base, TeamMixin):
     api_key: Mapped[str] # hashed
 
     space_keys: Mapped[List['ConfluenceSpaceKey']] = relationship(back_populates='configs')
-
+    team: Mapped['Team'] = relationship(back_populates='atlassian_configs')
 
 class ConfluenceSpaceKey(CommonMixin, Base):
     

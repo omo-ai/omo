@@ -29,5 +29,6 @@ class Team(Base, CommonMixin):
     users: Mapped[List['User']] = relationship(back_populates='team')
 
     atlassian_configs: Mapped[List['AtlassianConfig']] = relationship(back_populates='team')
-    gdrive_configs: Mapped[List['GoogleDriveConfig']] = relationship(back_populates='team')
+    googledrive_configs: Mapped[List['GoogleDriveConfig']] = relationship(back_populates='team')
     pinecone_configs: Mapped[List['PineconeConfig']] = relationship(back_populates='team')
+

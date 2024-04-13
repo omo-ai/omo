@@ -9,3 +9,4 @@ class GoogleDriveConfig(CommonMixin, Base, TeamMixin):
     gdrive_id: Mapped[str] = mapped_column(unique=True, index=True)
     delegate_email: Mapped[str] = mapped_column(nullable=True)
     files = Column(NestedMutableJson)
+    team: Mapped['Team'] = relationship(back_populates='googledrive_configs')

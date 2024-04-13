@@ -49,18 +49,15 @@ def create_vecstore_config(user: User, team: Team, db: Session = Depends(get_db)
 
 def get_installed_connectors(user: User) -> dict:
     installed_connectors = {
-        'connectors': []
+        'connectors': {}
     }
     for app in AVAILABLE_APPS:
-        app_configs = getattr(user.team.team_config, f"{app}_configs")
-        # user has existing configs i.e. it's intalled
+        app_configs = getattr(user.team, f"{app}_configs")
+        # user has existing configs i.e. it's installed
         if not app_configs:
             continue
 
-        # TODO we probably want to instantiate into response models
-        # to control what attributes are sent to the client.
-        # get all the columns but delete this key.
-        installed_connectors['connectors'][app] = [app_configs.__dict__.pop('_sa_instance_state', None) for app_configs in app_configs]
+        installed_connectors['connectors'][app] = [app_config.id for app_config in app_configs]
 
     return installed_connectors
 
@@ -79,7 +76,7 @@ def get_vector_store_config(user: User) -> dict:
     config['vector_store'] = {key: "" for key in keys}
     config['vector_store']['provider'] = vecstore
 
-    vecstore_config = getattr(user.team.team_config, f"{vecstore}_configs")[0]
+    vecstore_config = getattr(user.team, f"{vecstore}_configs")[0]
     for key in keys:
         config['vector_store'][key] = getattr(vecstore_config, key)
 

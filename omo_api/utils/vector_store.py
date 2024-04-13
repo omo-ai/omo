@@ -7,7 +7,7 @@ AVAILABLE_VECTOR_STORES = [
 ]
 AVAILABLE_APPS = [
     'atlassian',
-    'gdrive',
+    'googledrive',
 ]
 
 ACTIVE_VECTOR_STORE = 'pinecone'
