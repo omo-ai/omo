@@ -7,32 +7,37 @@ from pathlib import Path
 from google.auth.transport.requests import Request
 from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
-from langchain_googledrive.document_loaders import GoogleDriveLoader
+# from langchain_googledrive.document_loaders import GoogleDriveLoader
 from llama_index.core.readers.base import BasePydanticReader
 from llama_index.core.bridge.pydantic import PrivateAttr
 from llama_index.core.schema import Document
 from llama_index.core import SimpleDirectoryReader
+from llama_index.readers.file import UnstructuredReader
+
+# required by unstructured
+import nltk
+nltk.download('averaged_perceptron_tagger')
 
 logger = logging.getLogger(__name__)
 
-class GoogleDriveLoaderDomainWideDelegation(GoogleDriveLoader):
-    """
-    This loader can be used in the case there is domain wide delegation
-    configured with delegated user email. (i.e. impersonate a user)
-    """
-    def _load_credentials(self, scopes):
-        try:
-            creds = service_account.Credentials.from_service_account_file(
-                os.getenv('GOOGLE_ACCOUNT_FILE'),
-                scopes=scopes
-            )
-            if 'GOOGLE_DELEGATE_EMAIL' in os.environ:
-                delegated_creds = creds.with_subject(os.getenv('GOOGLE_DELEGATE_EMAIL'))
-                return delegated_creds
+# class GoogleDriveLoaderDomainWideDelegation(GoogleDriveLoader):
+#     """
+#     This loader can be used in the case there is domain wide delegation
+#     configured with delegated user email. (i.e. impersonate a user)
+#     """
+#     def _load_credentials(self, scopes):
+#         try:
+#             creds = service_account.Credentials.from_service_account_file(
+#                 os.getenv('GOOGLE_ACCOUNT_FILE'),
+#                 scopes=scopes
+#             )
+#             if 'GOOGLE_DELEGATE_EMAIL' in os.environ:
+#                 delegated_creds = creds.with_subject(os.getenv('GOOGLE_DELEGATE_EMAIL'))
+#                 return delegated_creds
 
-            return creds
-        except ValueError as e:
-            return super()._load_credentials(scopes)
+#             return creds
+#         except ValueError as e:
+#             return super()._load_credentials(scopes)
 
 
 
@@ -41,6 +46,8 @@ class GoogleDriveLoaderDomainWideDelegation(GoogleDriveLoader):
 # Scope for reading and downloading google drive files
 SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
 
+# Custom implementation of 
+# https://github.com/run-llama/llama_index/blob/main/llama-index-integrations/readers/llama-index-readers-google/llama_index/readers/google/drive/base.py
 class GoogleDriveReaderOAuthAccessToken(BasePydanticReader):
 
     client_config: Optional[dict] = None
@@ -71,20 +78,45 @@ class GoogleDriveReaderOAuthAccessToken(BasePydanticReader):
         # Download Google Docs/Slides/Sheets as actual files
         # See https://developers.google.com/drive/v3/web/mime-types
         self._mimetypes = {
-            "application/vnd.google-apps.document": {
-                "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                "extension": ".docx",
+            # Google filetypes will be downloaded as OpenXML formats
+            "google": {
+                "application/vnd.google-apps.document": {
+                    "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    "extension": ".docx",
+                },
+                "application/vnd.google-apps.spreadsheet": {
+                    "mimetype": (
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    ),
+                    "extension": ".xlsx",
+                },
+                "application/vnd.google-apps.presentation": {
+                    "mimetype": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                    "extension": ".pptx",
+                },
             },
-            "application/vnd.google-apps.spreadsheet": {
-                "mimetype": (
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                ),
-                "extension": ".xlsx",
-            },
-            "application/vnd.google-apps.presentation": {
-                "mimetype": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                "extension": ".pptx",
-            },
+            "other": {
+                # Microsoft Word
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
+                    "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    "extension": ".docx"
+                },
+                # Excel
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                    "mimetype": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "extension": ".xlsx",
+                },
+                # Powerpoint
+                "application/vnd.openxmlformats-officedocument.presentationml.presentation": {
+                    "mimetype": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                    "extension": ".pptx",
+                },
+                "application/pdf": {
+                    "mimetype": "application/pdf",
+                    "extension": ".pdf",
+                }
+
+            }
         }
 
         super().__init__(
@@ -275,9 +307,12 @@ class GoogleDriveReaderOAuthAccessToken(BasePydanticReader):
             service = build("drive", "v3", credentials=self._creds)
             file = service.files().get(fileId=fileid, supportsAllDrives=True).execute()
 
-            if file["mimeType"] in self._mimetypes:
-                download_mimetype = self._mimetypes[file["mimeType"]]["mimetype"]
-                download_extension = self._mimetypes[file["mimeType"]]["extension"]
+            logger.debug(f"file mimetype:{file['mimeType']}")
+
+            # Depending on the mimetype, we have to make a different API call
+            if file["mimeType"] in self._mimetypes['google']:
+                download_mimetype = self._mimetypes['google'][file["mimeType"]]["mimetype"]
+                download_extension = self._mimetypes['google'][file["mimeType"]]["extension"]
                 new_file_name = filename + download_extension
 
                 # Download and convert file
@@ -285,24 +320,33 @@ class GoogleDriveReaderOAuthAccessToken(BasePydanticReader):
                     fileId=fileid, mimeType=download_mimetype
                 )
             else:
-                new_file_name = filename
+                try:
+                    download_extension = self._mimetypes['other'][file['mimeType']]['extension']
+                    new_file_name = filename + download_extension
+                except KeyError as e:
+                    new_file_name = filename
 
                 # Download file without conversion
                 request = service.files().get_media(fileId=fileid)
 
             # Download file data
+            # creates a temp file e.g.
+            # /tmp/tmpf_u0031c/1A6kqGjaSJo4X7Asa2RJsqK6JBZ1nBjgM.pptx
             file_data = BytesIO()
             downloader = MediaIoBaseDownload(file_data, request)
             done = False
 
             while not done:
                 status, done = downloader.next_chunk()
+            
+            logger.debug(f"tmp file name {new_file_name}")
 
             # Save the downloaded file
             with open(new_file_name, "wb") as f:
                 f.write(file_data.getvalue())
 
             return new_file_name
+
         except Exception as e:
             logger.error(
                 f"An error occurred while downloading file: {e}", exc_info=True
@@ -341,10 +385,19 @@ class GoogleDriveReaderOAuthAccessToken(BasePydanticReader):
                         "last_modified_date": fileid_meta[5],
                         "source": fileid_meta[6],
                     }
-                loader = SimpleDirectoryReader(temp_dir, file_metadata=get_metadata)
+                loader = SimpleDirectoryReader(
+                    temp_dir, 
+                    file_metadata=get_metadata,
+                    file_extractor={
+                        ".ppt": UnstructuredReader(),
+                        ".pptx": UnstructuredReader(),
+                        ".doc": UnstructuredReader(),
+                        ".docx": UnstructuredReader(),
+                        ".xslx": UnstructuredReader(),
+                    })
                 documents = loader.load_data()
                 for doc in documents:
-                    doc.id_ = doc.metadata.get("file id", doc.id_)
+                    doc.id_ = doc.metadata.get("file_id", doc.id_)
 
             return documents
         except Exception as e:
