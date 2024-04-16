@@ -33,23 +33,9 @@ aws-secretsmanager-caching==1.1.1.5
 python-slugify==8.0.4
 
 #connectors
+unstructured[csv,doc,docx,image,md,msg,pdf,ppt,pptx,rtf,rst,xlsx]==0.13.2
 pyairtable==2.2.2
-docx2txt==0.8
 atlassian-python-api==3.41.3
-# Used for parsing PDFs, using semantic chunker text splitter
-pypdf==4.1.0
-rapidocr-onnxruntime==1.3.14
 
 # Queues
 celery==5.3.6 # celery-director will install 5.2.6 regardless
-
-
-# deprecated
-langchain==0.1.11
-langchainhub==0.1.13
-langchain-openai==0.0.8 # delete 
-langchain-pinecone==0.0.3 # delete
-langchain-experimental==0.0.53 # Semantic Chunk Parser #delete
-langchain-text-splitters==0.0.1
-langchain-googledrive==0.0.329
-unstructured==0.11.2

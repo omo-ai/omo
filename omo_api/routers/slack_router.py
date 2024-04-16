@@ -14,7 +14,7 @@ from slack_sdk.oauth.state_store import FileOAuthStateStore
 from omo_api.utils.context import get_slack_user_context
 from omo_api.models.slack import SlackMessagePayload
 from omo_api.routers.qa import (
-    answer_question,
+    # answer_question,
     preprocess_message,
     show_prompt
 )

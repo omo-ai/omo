@@ -13,11 +13,11 @@ from llama_index.vector_stores.pinecone import PineconeVectorStore
 from llama_index.core import Settings
 from llama_index.core.postprocessor import MetadataReplacementPostProcessor
 from llama_index.vector_stores.pinecone import PineconeVectorStore
-from langchain.chains.qa_with_sources.loading import load_qa_with_sources_chain
-from langchain.chains.qa_with_sources.retrieval import RetrievalQAWithSourcesChain
-from langchain_openai import OpenAIEmbeddings
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain.docstore.document import Document
+# from langchain.chains.qa_with_sources.loading import load_qa_with_sources_chain
+# from langchain.chains.qa_with_sources.retrieval import RetrievalQAWithSourcesChain
+# from langchain_openai import OpenAIEmbeddings
+# from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+# from langchain.docstore.document import Document
 from omo_api.models.chat import Message
 from omo_api.utils.pipeline import get_chat_model, get_embedding_model, get_vector_store
 from omo_api.models.user import UserContext
@@ -51,17 +51,17 @@ def preprocess_message(message: str) -> str:
 
     return message
 
-def extract_sources(source_documents: List[Document]) -> list:
-    """ Dedupe sources and extra source metadata for the Slack response
-    """
-    seen_sources = []
-    final_sources = []
-    for doc in source_documents:
-        title = doc.metadata['title']
-        source = doc.metadata['source']
-        if source not in seen_sources:
-            final_sources.append({'title': title, 'source': source}) 
-    return final_sources
+# def extract_sources(source_documents: List[Document]) -> list:
+#     """ Dedupe sources and extra source metadata for the Slack response
+#     """
+#     seen_sources = []
+#     final_sources = []
+#     for doc in source_documents:
+#         title = doc.metadata['title']
+#         source = doc.metadata['source']
+#         if source not in seen_sources:
+#             final_sources.append({'title': title, 'source': source}) 
+#     return final_sources
         
 
 def show_prompt() -> str:
@@ -188,46 +188,46 @@ async def answer_question_stream(question: str, user_context: UserContext):
     yield sources.encode('utf8')
 
 
-def answer_question(question: str, context: dict) -> dict:
+# def answer_question(question: str, context: dict) -> dict:
 
-    # tmp overrides for ***REMOVED*** 
-    #os.environ['PINECONE_API_KEY'] = "***REMOVED***"
-    # pinecone_index = "***REMOVED***"
-    # pinecone_ns = "***REMOVED***"
+#     # tmp overrides for ***REMOVED*** 
+#     #os.environ['PINECONE_API_KEY'] = "***REMOVED***"
+#     # pinecone_index = "***REMOVED***"
+#     # pinecone_ns = "***REMOVED***"
     
-    os.environ['PINECONE_API_KEY'] = "***REMOVED***"
-    os.environ['PINECONE_ENV'] = 'gcp-starter'
-    # pinecone_index = context['omo_pinecone_index']
-    pinecone_index = 'starter_index'
-    pinecone_ns = 'default'
+#     os.environ['PINECONE_API_KEY'] = "***REMOVED***"
+#     os.environ['PINECONE_ENV'] = 'gcp-starter'
+#     # pinecone_index = context['omo_pinecone_index']
+#     pinecone_index = 'starter_index'
+#     pinecone_ns = 'default'
     
 
-    embedding_function = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
-    docsearch = PineconeVectorStore.from_existing_index(pinecone_index,
-                                                        embedding_function,)
-    retriever = docsearch.as_retriever()
+#     embedding_function = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
+#     docsearch = PineconeVectorStore.from_existing_index(pinecone_index,
+#                                                         embedding_function,)
+#     retriever = docsearch.as_retriever()
 
-    llm = ChatOpenAI(model_name="gpt-4-turbo-preview", temperature=0, openai_api_key=OPENAI_API_KEY)
+#     llm = ChatOpenAI(model_name="gpt-4-turbo-preview", temperature=0, openai_api_key=OPENAI_API_KEY)
 
-    qa_chain = load_qa_with_sources_chain(llm=llm, chain_type='stuff')
+#     qa_chain = load_qa_with_sources_chain(llm=llm, chain_type='stuff')
 
-    qa = RetrievalQAWithSourcesChain(
-        combine_documents_chain = qa_chain,
-        retriever = retriever,
-        return_source_documents=True
-    )
+#     qa = RetrievalQAWithSourcesChain(
+#         combine_documents_chain = qa_chain,
+#         retriever = retriever,
+#         return_source_documents=True
+#     )
 
-    answer_response = qa({ 'question': question }, return_only_outputs=False)
+#     answer_response = qa({ 'question': question }, return_only_outputs=False)
 
-    final_answer = {}
+#     final_answer = {}
     
-    if answer_response['sources']:
-        sources = extract_sources(answer_response['source_documents'])
-    else:
-        sources = ''
+#     if answer_response['sources']:
+#         sources = extract_sources(answer_response['source_documents'])
+#     else:
+#         sources = ''
     
-    final_answer['question'] = answer_response['question']
-    final_answer['answer'] = answer_response['answer']
-    final_answer['sources'] = sources
+#     final_answer['question'] = answer_response['question']
+#     final_answer['answer'] = answer_response['answer']
+#     final_answer['sources'] = sources
 
-    return final_answer
+#     return final_answer
