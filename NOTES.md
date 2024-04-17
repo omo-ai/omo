@@ -85,4 +85,21 @@ curl -X POST 'https://api.notion.com/v1/databases/Customer-Segment-422c1b460b4d4
 
 
   # Release
-  Added OPENAI_MODEL env var
+  # Drop the team_config_id from configs
+  alter table googledriveconfig drop column team_config_id;
+  alter table pineconeconfig drop column team_config_id;
+   alter table atlassianconfig drop team_config_id;
+
+  omoai=> select * from pineconeconfig;
+   index_name    |                api_key                |  environment  |          namespaces           | id |          created_at           |
+     updated_at           | team_config_id
+-----------------+---------------------------------------+---------------+-------------------------------+----+-------------------------------+-----
+--------------------------+----------------
+ alloydigital    | prod/omo-api/alloydigital/pinecone    | us-west4-gcp  | {default}                     |  1 | 2024-01-03 02:28:15.992136+00 | 2024
+-01-03 02:28:15.992136+00 |              1
+ alloydigital    | prod/omo-api/alloydigital/pinecone    | us-west4-gcp  | {default}                     |  3 | 2024-01-04 13:27:12.361368+00 | 2024
+-01-04 13:27:12.361368+00 |              2
+ starter_index     | /aws/secretsmanager/path             | gcp-starter   | {default}                     |  4 | 2024-01-16 06:00:03.002467+00 | 2024
+-01-16 06:00:03.002467+00 |              3
+ demo-serverless | prod/omo-api/pinecone/demo-serverless | us-east-1-aws | {christopher-t-han-gmail-com} |  8 | 2024-04-02 10:21:10.823538+00 | 2024
+-04-02 10:21:10.823538+00 |              4

@@ -1,9 +1,10 @@
 import json
+import math
 from sqlalchemy import update, select, func
 from celery.utils.log import get_task_logger
 from omo_api.loaders.gdrive.google_drive import GoogleDriveReaderOAuthAccessToken
 from omo_api.workers.background import celery
-from omo_api.utils.pipeline import get_pipeline
+from omo_api.utils.pipeline import get_pipeline, chunks, DEFAULT_BATCH_SIZE
 from omo_api.models.user import UserContext
 from omo_api.db.models.googledrive import GoogleDriveConfig
 from omo_api.db.connection import session
@@ -47,11 +48,24 @@ def sync_google_drive(files: dict, user_context: dict, access_token: str):
     namespace = context.vector_store.namespaces[0] # currently user only has one namespace
     logger.info(f"...writing to index:namespace {index}:{namespace}")
     # note namespaces are created automatically if it doesn't exist
-    pipeline = get_pipeline(all_docs, index, namespace)
-    nodes = pipeline.run(num_workers=1) # anything > 1 results in AttributeError: Can't pickle local object 'split_by_sentence_tokenizer.<locals>.split'
-    logger.debug(nodes)
-    logger.info(f"...Done indexing for user: {context.email}")
 
+    pipeline, vecstore, docstore, cache = get_pipeline(all_docs, index, namespace)
+
+    nodes = pipeline.run(num_workers=1) # anything > 1 results in AttributeError: Can't pickle local object 'split_by_sentence_tokenizer.<locals>.split'
+    logger.info(f"...pipelines nodes: {len(nodes)}")
+
+    batches_inserted = 0
+    total_batches = math.ceil(len(nodes)/DEFAULT_BATCH_SIZE)
+    for chunk in chunks(nodes, batch_size=DEFAULT_BATCH_SIZE):
+        try:
+            vecstore.add(chunk)
+            batches_inserted += 1
+            logger.info(f"Added batch {batches_inserted} of {total_batches}")
+        except Exception as e:
+            logger.error(f"Cannot add chunk: {e}")
+            continue
+
+    logger.info(f"...Done indexing for user: {context.email}")
     logger.info("updating db...")
     update_db(files, context)
 

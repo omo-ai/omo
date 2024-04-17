@@ -22,6 +22,8 @@ from omo_api.utils import get_env_var, flatten_list
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_BATCH_SIZE = os.environ.get('DEFAULT_BATCH_SIZE', 50)
+
 def get_ingestion_cache() -> RedisCache:
     url = get_env_var('REDIS_URL')
     cache = RedisCache(url)
@@ -43,7 +45,8 @@ def get_vector_store(api_key: str, index_name: str, namespace: str) -> BasePydan
     pc = PineconeGRPC(api_key=api_key)
     vector_store = PineconeVectorStore(
         pinecone_index=pc.Index(index_name),
-        namespace=namespace
+        namespace=namespace,
+        batch_size=DEFAULT_BATCH_SIZE
     )
 
     logger.info("Instatiated vecstore")
@@ -61,7 +64,7 @@ def get_stores(vecstore_index: str, namespace: str):
 
     return vector_store, docstore, ingestion_cache
     
-def chunks(iterable, batch_size=100):
+def chunks(iterable, batch_size=DEFAULT_BATCH_SIZE):
     """A helper function to break an iterable into chunks of size batch_size."""
     it = iter(iterable)
     chunk = tuple(itertools.islice(it, batch_size))
@@ -94,7 +97,7 @@ class SentenceWindowPipeline:
                  docs: list,
                  transforms: list,
                  params: dict,
-                 vector_store: BasePydanticVectorStore,
+                #  vector_store: BasePydanticVectorStore,
                  reader: BaseReader = SimpleDirectoryReader,
                  docstore: KVDocumentStore = get_doc_store(),
                  cache: BaseKVStore = get_ingestion_cache()):
@@ -106,11 +109,11 @@ class SentenceWindowPipeline:
         self.docstore = docstore
         self.cache = cache
 
-        self.node_parser = SentenceWindowNodeParser(**params)
+        self.node_parser = SentenceWindowNodeParser.from_defaults(**params)
         self.pipeline = IngestionPipeline(
             transformations=[self.node_parser] + self.transforms,
             docstore=docstore,
-            vector_store=vector_store,
+            # vector_store=vector_store,
             docstore_strategy=DocstoreStrategy.UPSERTS
         )
 
@@ -123,23 +126,27 @@ class SentenceWindowPipeline:
             logger.error(f"***Exception indexing documents: {e}***")
     
 def get_pipeline(documents: List[Document], vectore_index: str, namespace: str):
+
     vecstore, docstore, ingestion_cache = get_stores(vecstore_index=vectore_index,
                                                      namespace=namespace)
+    #Settings.text_splitter = SentenceSplitter()
+
     pipeline = SentenceWindowPipeline(
         docs=flatten_list(documents),
         transforms=[
-            SentenceSplitter(),
+            # SentenceSplitter(),
             get_embedding_model(),
         ],
         params = {
+            # 'sentence_splitter': SentenceSplitter(chunk_size=1024, chunk_overlap=256),
             'window_size': 3,
             'window_metadata_key': 'window',
             'original_text_metadata_key': 'original_text',
         },
-        vector_store=vecstore,
+        # vector_store=vecstore,
         docstore=docstore,
         cache=ingestion_cache
         
     )
     logger.info(f"got pipeline")
-    return pipeline
+    return pipeline, vecstore, docstore, ingestion_cache
