@@ -50,6 +50,7 @@ class ConnectorContext(BaseModel):
     id: List[int]
 
 class UserContext(BaseModel):
+    id: int
     email: str
     updated_at: str
     is_active: bool

@@ -3,12 +3,14 @@ from typing import Any
 from fastapi import Depends, APIRouter, HTTPException
 from fastapi.encoders import jsonable_encoder
 from slugify import slugify
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import NoResultFound
 from omo_api.db.utils import get_db, get_or_create
-from omo_api.models.user import UserRegister
-from omo_api.db.models import User, Team, PineconeConfig
+from omo_api.models.user import UserRegister, UserContext
+from omo_api.db.models import User, Team, PineconeConfig, UserCeleryTasks
 from omo_api.utils import get_env_var
+from omo_api.utils.background import get_celery_task_status
 from omo_api.utils.vector_store import *
 
 logger = logging.getLogger(__name__) 
@@ -126,5 +128,23 @@ async def get_user(email: str, db: Session = Depends(get_db)) -> dict:
 
     return response_dict
 
+@router.get('/v1/user/connectors')
+async def get_connector_status(user_context: UserContext, db: Session = Depends(get_db)) -> dict:
     
+    query = db.query(UserCeleryTasks)\
+            .where(UserCeleryTasks.user_id == user_context.id)\
+            .distinct(UserCeleryTasks.connector)\
+            .order_by(UserCeleryTasks.connector, UserCeleryTasks.updated_at.desc())
+    
+    result = db.execute(query).all()
 
+    response = []
+    for result in result:
+        status = {
+            'connector': result.connector,
+            'status': get_celery_task_status(result.job_id),
+        }
+        response.append(status)
+
+
+    return response

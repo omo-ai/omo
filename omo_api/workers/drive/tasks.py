@@ -8,11 +8,12 @@ from omo_api.utils.pipeline import get_pipeline, chunks, DEFAULT_BATCH_SIZE
 from omo_api.models.user import UserContext
 from omo_api.db.models.googledrive import GoogleDriveConfig
 from omo_api.db.connection import session
+from omo_api.utils.background import TaskStates
 
 logger = get_task_logger(__name__) 
 
-@celery.task
-def sync_google_drive(files: dict, user_context: dict, access_token: str):
+@celery.task(bind=True)
+def sync_google_drive(self, files: dict, user_context: dict, access_token: str):
 
     def update_db(files: dict, user_ctx: UserContext):
         files_dict = {f['id']: f for f in files}
@@ -55,11 +56,16 @@ def sync_google_drive(files: dict, user_context: dict, access_token: str):
     logger.info(f"...pipelines nodes: {len(nodes)}")
 
     batches_inserted = 0
-    total_batches = math.ceil(len(nodes)/DEFAULT_BATCH_SIZE)
+    total_batches = math.ceil(len(nodes) / DEFAULT_BATCH_SIZE)
     for chunk in chunks(nodes, batch_size=DEFAULT_BATCH_SIZE):
         try:
             vecstore.add(chunk)
             batches_inserted += 1
+
+            # Track progress in celery
+            self.update_state(state=TaskStates.PROGRESS,
+                              meta={'done': batches_inserted, 'total': total_batches})
+
             logger.info(f"Added batch {batches_inserted} of {total_batches}")
         except Exception as e:
             logger.error(f"Cannot add chunk: {e}")
