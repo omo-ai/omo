@@ -14,10 +14,10 @@ class Connector(Enum):
     ATLASSIAN = 'atlassian'
 
 AVAILABLE_CONNECTORS = {
-    Connector.ATLASSIAN: {
+    Connector.ATLASSIAN.value: {
         'display_name': 'Atlassian',
     },
-    Connector.GOOGLE_DRIVE: {
+    Connector.GOOGLE_DRIVE.value: {
         'display_name': 'Google Drive',
     }
 }
@@ -32,7 +32,7 @@ class VectorStores(Enum):
     PINECONE = 'pinecone'
 
 AVAILABLE_VECTOR_STORES = {
-    VectorStores.PINECONE: {
+    VectorStores.PINECONE.value: {
         'display_name': 'Pinecone',
     }
 }

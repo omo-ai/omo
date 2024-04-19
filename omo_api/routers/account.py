@@ -10,7 +10,7 @@ from omo_api.db.utils import get_db, get_or_create
 from omo_api.models.user import UserRegister, UserContext
 from omo_api.db.models import User, Team, PineconeConfig, UserCeleryTasks
 from omo_api.utils import get_env_var
-from omo_api.utils.background import get_celery_task_status
+from omo_api.utils.background import get_celery_task_status, display_task_status
 from omo_api.utils.vector_store import get_current_vector_store
 from omo_api.settings import AVAILABLE_CONNECTORS
 
@@ -139,14 +139,22 @@ async def get_connector_status(user_id: int, db: Session = Depends(get_db)) -> d
     
     results = db.execute(query).all() # returns list of tuples
 
+    # shape the response for easy consumption on the frontend
     statuses = []
     for result in results:
+
+        connector_slug = list(result[0].connector.keys())[0] # e.g googledrive
+        display_name = AVAILABLE_CONNECTORS[connector_slug]['display_name']
+
+        celery_task_status = get_celery_task_status(result[0].job_id)['status']
+        display_status = display_task_status(celery_task_status)
+
         status = {
             'connector': {
-                'name': list(result[0].connector.keys())[0],
-                'id': list(result[0].connector.values())[0],
+                'name': display_name,
+                'ids': list(result[0].connector.values())[0],
             },
-            'status': get_celery_task_status(result[0].job_id)['status'],
+            'status': display_status,
         }
         print(status)
         statuses.append(status)

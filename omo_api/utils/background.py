@@ -13,3 +13,17 @@ def get_celery_task_status(task_id: str):
 
     res = celery.AsyncResult(task_id)
     return {'ready': res.ready(), 'status': res.status }
+
+
+def display_task_status(status: str):
+    """The status to display on the frontend"""
+    if status == TaskStates.PENDING.value:
+        return 'starting'
+    if status == TaskStates.PROGRESS.value:
+        return 'syncing'
+    if status == TaskStates.SUCCESS.value:
+        return 'synced'
+    if status == TaskStates.FAILURE.value:
+        return 'error'
+    
+    return status
