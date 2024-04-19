@@ -10,7 +10,7 @@ from omo_api.models.user import UserContext
 from omo_api.workers.drive import tasks
 from omo_api.db.models.user import UserCeleryTasks
 from omo_api.db.utils import get_db
-from omo_api.settings import Connectors
+from omo_api.settings import Connector
 
 # since environment variable it's a relative to the root of the project, not this file
 os.environ['GOOGLE_ACCOUNT_FILE'] = './routers/google_service_key.json'
@@ -38,7 +38,7 @@ async def process_gdrive_files(files: List[GoogleDriveObject],
         # client can tamper with any of the payload
         connector_ids = None
         for connector in user_context.connectors:
-            if connector.name == Connectors.GOOGLE_DRIVE:
+            if connector.name == Connector.GOOGLE_DRIVE:
                 connector_ids = connector.id
 
         logger.debug(f"Inserting into celery job table: {task_result.id}")
@@ -46,7 +46,7 @@ async def process_gdrive_files(files: List[GoogleDriveObject],
                 .values(
                     user_id=user_context.id,
                     job_id=task_result.id,
-                    connector={Connectors.GOOGLE_DRIVE: connector_ids}
+                    connector={Connector.GOOGLE_DRIVE: connector_ids}
                 )
         result = db.execute(stmt)
         db.commit()

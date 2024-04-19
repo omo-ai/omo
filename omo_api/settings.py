@@ -1,26 +1,39 @@
 from enum import Enum
 
-# these should align with the fields in TeamC object
-# i.e. if X is listed here, then the user.Team object
-# should have a X_configs field
 
-class Connectors(Enum):
+# To add a new Connector:
+# 1. Add a new name to the Connectors class
+# 2. Add it to AVAILABLE_CONNECTORS
+
+############################
+######## Connectors ########
+############################
+
+class Connector(Enum):
     GOOGLE_DRIVE = 'googledrive'
     ATLASSIAN = 'atlassian'
 
-
 AVAILABLE_CONNECTORS = {
-    Connectors.ATLASSIAN: {
+    Connector.ATLASSIAN: {
         'display_name': 'Atlassian',
     },
-    Connectors.GOOGLE_DRIVE: {
+    Connector.GOOGLE_DRIVE: {
         'display_name': 'Google Drive',
     }
 }
 
+############################
+###### Vector Stores #######
+############################
+
+# Only Pinecone is supported currently
+
+class VectorStores(Enum):
+    PINECONE = 'pinecone'
+
 AVAILABLE_VECTOR_STORES = {
-    'pinecone': {
+    VectorStores.PINECONE: {
         'display_name': 'Pinecone',
     }
 }
-ACTIVE_VECTOR_STORE = 'pinecone' # matches key above
+ACTIVE_VECTOR_STORE = VectorStores.PINECONE
