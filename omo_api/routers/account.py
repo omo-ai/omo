@@ -129,22 +129,25 @@ async def get_user(email: str, db: Session = Depends(get_db)) -> dict:
     return response_dict
 
 @router.get('/v1/user/connectors')
-async def get_connector_status(user_context: UserContext, db: Session = Depends(get_db)) -> dict:
+async def get_connector_status(user_id: int, db: Session = Depends(get_db)) -> dict:
     
     query = db.query(UserCeleryTasks)\
-            .where(UserCeleryTasks.user_id == user_context.id)\
+            .where(UserCeleryTasks.user_id == user_id)\
             .distinct(UserCeleryTasks.connector)\
             .order_by(UserCeleryTasks.connector, UserCeleryTasks.updated_at.desc())
     
-    result = db.execute(query).all()
+    results = db.execute(query).all() # returns list of tuples
 
-    response = []
-    for result in result:
+    statuses = []
+    for result in results:
         status = {
-            'connector': result.connector,
-            'status': get_celery_task_status(result.job_id),
+            'connector': {
+                'name': list(result[0].connector.keys())[0],
+                'id': list(result[0].connector.values())[0],
+            },
+            'status': get_celery_task_status(result[0].job_id)['status'],
         }
-        response.append(status)
+        print(status)
+        statuses.append(status)
 
-
-    return response
+    return { 'statuses': statuses }

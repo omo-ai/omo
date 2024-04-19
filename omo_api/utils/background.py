@@ -10,5 +10,6 @@ class TaskStates(enum.Enum):
 
 def get_celery_task_status(task_id: str):
     from omo_api.workers.background import celery
+
     res = celery.AsyncResult(task_id)
-    return res.ready(), res.status
+    return {'ready': res.ready(), 'status': res.status }
