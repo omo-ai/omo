@@ -11,7 +11,8 @@ from omo_api.models.user import UserRegister, UserContext
 from omo_api.db.models import User, Team, PineconeConfig, UserCeleryTasks
 from omo_api.utils import get_env_var
 from omo_api.utils.background import get_celery_task_status
-from omo_api.utils.vector_store import *
+from omo_api.utils.vector_store import get_current_vector_store
+from omo_api.settings import AVAILABLE_CONNECTORS
 
 logger = logging.getLogger(__name__) 
 
@@ -53,7 +54,7 @@ def get_installed_connectors(user: User) -> dict:
     installed_connectors = {
         'connectors': []
     }
-    for app in AVAILABLE_APPS:
+    for app in AVAILABLE_CONNECTORS.keys():
         app_configs = getattr(user.team, f"{app}_configs")
         # user has existing configs i.e. it's installed
         if not app_configs:
