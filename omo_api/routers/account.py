@@ -12,7 +12,7 @@ from omo_api.db.models import User, Team, PineconeConfig, UserCeleryTasks
 from omo_api.utils import get_env_var
 from omo_api.utils.background import get_celery_task_status, display_task_status
 from omo_api.utils.vector_store import get_current_vector_store
-from omo_api.settings import AVAILABLE_CONNECTORS
+from omo_api.settings import AVAILABLE_CONNECTORS, Connector
 
 logger = logging.getLogger(__name__) 
 
@@ -55,7 +55,7 @@ def get_installed_connectors(user: User) -> dict:
         'connectors': []
     }
     for app in AVAILABLE_CONNECTORS.keys():
-        app_configs = getattr(user.team, f"{app}_configs")
+        app_configs = getattr(user.team, f"{app}_configs", None)
         # user has existing configs i.e. it's installed
         if not app_configs:
             continue
@@ -87,6 +87,17 @@ def get_vector_store_config(user: User) -> dict:
 
 def get_user_team(user: User) -> dict:
     pass
+
+def get_user_files(user_id: int, connector_slug: str, db: Session):
+
+    if connector_slug == Connector.GOOGLE_DRIVE.value:
+        user = db.query(User).filter_by(id=4).one()
+        files = user.team.googledrive_configs[0].files
+        return files
+    
+    return []
+        
+
 
 ############
 ## Routes ##
@@ -149,12 +160,17 @@ async def get_connector_status(user_id: int, db: Session = Depends(get_db)) -> d
         celery_task_status = get_celery_task_status(result[0].job_id)['status']
         display_status = display_task_status(celery_task_status)
 
+        files = get_user_files(user_id, connector_slug, db) 
+
         status = {
             'connector': {
                 'name': display_name,
+                'slug': connector_slug,
                 'ids': list(result[0].connector.values())[0],
             },
             'status': display_status,
+            'files': files,
+            'files_count': len(files),
         }
         print(status)
         statuses.append(status)

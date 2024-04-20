@@ -63,7 +63,7 @@ def sync_google_drive(self, files: dict, user_context: dict, access_token: str):
             batches_inserted += 1
 
             # Track progress in celery
-            self.update_state(state=TaskStates.PROGRESS,
+            self.update_state(state=TaskStates.PROGRESS.value,
                               meta={'done': batches_inserted, 'total': total_batches})
 
             logger.info(f"Added batch {batches_inserted} of {total_batches}")

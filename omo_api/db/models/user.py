@@ -41,5 +41,7 @@ class Team(Base, CommonMixin):
 
 class UserCeleryTasks(Base, CommonMixin):
     job_id: Mapped[str] # task_id
-    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
     connector = Column(mutable_json_type(dbtype=JSONB, nested=True), nullable=True) # e.g. { "googledrive": ["connector_id"] }
+
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    user: Mapped['User'] = relationship()
