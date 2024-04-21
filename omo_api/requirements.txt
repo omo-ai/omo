@@ -33,9 +33,11 @@ aws-secretsmanager-caching==1.1.1.5
 python-slugify==8.0.4
 
 #connectors
-unstructured[csv,doc,docx,image,md,msg,pdf,ppt,pptx,rtf,rst,xlsx]==0.13.2
 pyairtable==2.2.2
 atlassian-python-api==3.41.3
+torch==2.2.2
+transformers==4.40.0
+python-pptx==0.6.23
 
 # Queues
 celery==5.3.6 # celery-director will install 5.2.6 regardless

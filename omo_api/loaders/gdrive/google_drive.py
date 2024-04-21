@@ -3,20 +3,13 @@ import logging
 import tempfile
 from typing import Optional, List, Any
 from pathlib import Path
-
 from google.auth.transport.requests import Request
 from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
-# from langchain_googledrive.document_loaders import GoogleDriveLoader
 from llama_index.core.readers.base import BasePydanticReader
 from llama_index.core.bridge.pydantic import PrivateAttr
 from llama_index.core.schema import Document
 from llama_index.core import SimpleDirectoryReader
-from llama_index.readers.file import UnstructuredReader
-
-# required by unstructured
-import nltk
-nltk.download('averaged_perceptron_tagger')
 
 logger = logging.getLogger(__name__)
 
@@ -388,13 +381,7 @@ class GoogleDriveReaderOAuthAccessToken(BasePydanticReader):
                 loader = SimpleDirectoryReader(
                     temp_dir, 
                     file_metadata=get_metadata,
-                    file_extractor={
-                        ".ppt": UnstructuredReader(),
-                        ".pptx": UnstructuredReader(),
-                        ".doc": UnstructuredReader(),
-                        ".docx": UnstructuredReader(),
-                        ".xslx": UnstructuredReader(),
-                    })
+                )
                 documents = loader.load_data()
                 for doc in documents:
                     doc.id_ = doc.metadata.get("file_id", doc.id_)
