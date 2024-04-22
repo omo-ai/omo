@@ -26,6 +26,8 @@ def upgrade() -> None:
 
 # The table was created when running 'alembic revision'. we did
 # not have to run `alembic upgrade``
+# This is essentially a no-op - this file was created when autogenerating
+# Just ensure the table exists in pg.
 # CREATE TABLE usercelerytasks (
 # 	job_id VARCHAR NOT NULL,
 # 	user_id INTEGER NOT NULL,
