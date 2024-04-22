@@ -25,7 +25,8 @@ services:
     container_name: omo_server_1
     build:
       context: ./omo_api
-      dockerfile: build/docker/Dockerfile.api
+      dockerfile: build/Dockerfile
+      target: api
     platform: linux/amd64
     ports:
       - 8000:80
@@ -52,7 +53,8 @@ services:
     container_name: omo_celery_1
     build:
       context: ./omo_api
-      dockerfile: build/docker/Dockerfile.celery
+      dockerfile: build/Dockerfile
+      target: omo_celeryworker
     command: celery -A workers.background worker -l debug
     volumes:
       - ./omo_api/:/var/www/omo_api
@@ -67,7 +69,8 @@ services:
     container_name: omo_beat_1
     build:
       context: ./omo_api
-      dockerfile: build/docker/Dockerfile.celerybeat
+      dockerfile: build/docker/Dockerfile
+      target: omo_celerybeat
     command: celery -A workers.background beat -l debug
     volumes:
       - ./omo_api/:/var/www/omo_api
