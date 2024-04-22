@@ -3,11 +3,9 @@ import logging
 from logging.config import dictConfig
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.core import Settings
-from llama_index.llms.openai import OpenAI
+
 from omo_api.conf.log import log_config
-from omo_api.conf.auth0 import AUTH0_CORS_IPS
 from omo_api.routers import (
     auth_router,
     files_router, 
@@ -18,6 +16,8 @@ from omo_api.routers import (
     account,
 )
 from omo_api.db.connection import engine
+from omo_api.settings import CORS_ORIGINS, OPENAPI_URL
+from omo_api.utils import get_env_var
 
 # Necessary for the call to create_all() to create tables
 from omo_api.db.models import *
@@ -25,25 +25,7 @@ from omo_api.db.models import *
 dictConfig(log_config)
 logger = logging.getLogger(__name__)
 
-APP_ENV = os.getenv('APP_ENV', 'development')
-
-if APP_ENV == 'production':
-    origins = [
-        "https://api.omo.bot",
-        "https://app.helloomo.ai",
-    ] + AUTH0_CORS_IPS
-    openapi_url = None # don't publish docs publicly
-else:
-
-    origins = [
-        "http://localhost:8000",
-        "http://localhost:5173",
-        "http://localhost:3000",
-        "http://localhost:3001",
-    ]
-    openapi_url = '/api/v1/openapi.json'
-
-app = FastAPI(openapi_url=openapi_url)
+app = FastAPI(openapi_url=OPENAPI_URL)
 
 app.include_router(googledrive_router.router)
 app.include_router(auth_router.router)
@@ -58,15 +40,20 @@ Base.metadata.create_all(bind=engine)
  
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
 
-Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-large")
-Settings.llm = OpenAI(temperature=0.0, model="gpt-4-0125-preview")
+llm = get_env_var('LLM')
+if llm == 'openai':
+    from llama_index.llms.openai import OpenAI
+    from llama_index.embeddings.openai import OpenAIEmbedding
+
+    Settings.embed_model = OpenAIEmbedding(model=get_env_var('OPENAI_EMBEDDING_MODEL'))
+    Settings.llm = OpenAI(temperature=0.0, model=get_env_var('OPENAI_MODEL'))
 
 @app.get("/")
 async def root():
