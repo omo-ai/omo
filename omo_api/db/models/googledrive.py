@@ -7,7 +7,7 @@ from omo_api.db.models.common import CommonMixin, Base, TeamMixin
 
 class GoogleDriveConfig(CommonMixin, Base, TeamMixin):
 
-    gdrive_id: Mapped[str] = mapped_column(unique=True, index=True)
+    gdrive_id: Mapped[str] = mapped_column(unique=True, index=True, nullable=True)
     delegate_email: Mapped[str] = mapped_column(nullable=True)
     files = Column(mutable_json_type(dbtype=JSONB, nested=True), default=lambda: {})
     team: Mapped['Team'] = relationship(back_populates='googledrive_configs')

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ECR_URL=187613313731.dkr.ecr.us-west-2.amazonaws.com
-TAG=v0.2.5
+TAG=v0.2.7
 
 
 function authenticate_image_registry() {
@@ -9,7 +9,7 @@ function authenticate_image_registry() {
 }
 
 function build_image() {
-    docker build -t $IMAGE:$TAG-amd64 -f docker/Dockerfile.multi --target $TARGET --platform linux/amd64 ../
+    docker build -t $IMAGE:$TAG-amd64 -f Dockerfile --target $TARGET --platform linux/amd64 ../
     docker tag $IMAGE:$TAG-amd64 $ECR_URL/$IMAGE:$TAG-amd64
 }
 
