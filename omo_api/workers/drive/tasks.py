@@ -1,6 +1,8 @@
 import json
 import math
 from sqlalchemy import update, select, func
+from sqlalchemy.sql.functions import coalesce
+from sqlalchemy.dialects.postgresql import JSONB
 from celery.utils.log import get_task_logger
 from omo_api.loaders.gdrive.google_drive import GoogleDriveReaderOAuthAccessToken
 from omo_api.workers.background import celery
@@ -8,6 +10,7 @@ from omo_api.utils.pipeline import get_pipeline, chunks, DEFAULT_BATCH_SIZE
 from omo_api.models.user import UserContext
 from omo_api.db.models.googledrive import GoogleDriveConfig
 from omo_api.db.connection import session
+from omo_api.db.utils import get_or_create
 from omo_api.utils.background import TaskStates
 
 logger = get_task_logger(__name__) 
@@ -17,9 +20,15 @@ def sync_google_drive(self, files: dict, user_context: dict, access_token: str):
 
     def update_db(files: dict, user_ctx: UserContext):
         files_dict = {f['id']: f for f in files}
+        config_kwargs = {
+            'team_id': user_ctx.team_id
+        }
+        logger.info(f"Updating DB with {len(files_dict)} files")
+        # Ensure the GoogleDriveConfig object exists
+        gdrive_config, created = get_or_create(session, GoogleDriveConfig, **config_kwargs)
         stmt = update(GoogleDriveConfig)\
                 .where(GoogleDriveConfig.team_id == user_ctx.team_id)\
-                .values(files=GoogleDriveConfig.files + files_dict) # append files
+                .values(files=coalesce(GoogleDriveConfig.files, func.jsonb('{}')) + files_dict) # append files
         result = session.execute(stmt)
         session.commit()
 
@@ -78,4 +87,3 @@ def sync_google_drive(self, files: dict, user_context: dict, access_token: str):
 
 
         
-            

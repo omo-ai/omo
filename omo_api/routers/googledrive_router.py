@@ -38,7 +38,7 @@ async def process_gdrive_files(files: List[GoogleDriveObject],
         # client can tamper with any of the payload
         connector_ids = None
         for connector in user_context.connectors:
-            if connector.name == Connector.GOOGLE_DRIVE:
+            if connector.name == Connector.GOOGLE_DRIVE.value:
                 connector_ids = connector.id
 
         logger.debug(f"Inserting into celery job table: {task_result.id}")
@@ -46,7 +46,7 @@ async def process_gdrive_files(files: List[GoogleDriveObject],
                 .values(
                     user_id=user_context.id,
                     job_id=task_result.id,
-                    connector={Connector.GOOGLE_DRIVE: connector_ids}
+                    connector={Connector.GOOGLE_DRIVE.value: connector_ids}
                 )
         result = db.execute(stmt)
         db.commit()

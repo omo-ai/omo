@@ -91,7 +91,7 @@ def get_user_team(user: User) -> dict:
 def get_user_files(user_id: int, connector_slug: str, db: Session):
 
     if connector_slug == Connector.GOOGLE_DRIVE.value:
-        user = db.query(User).filter_by(id=4).one()
+        user = db.query(User).filter_by(id=user_id).one()
         files = user.team.googledrive_configs[0].files
         return files
     
@@ -154,25 +154,28 @@ async def get_connector_status(user_id: int, db: Session = Depends(get_db)) -> d
     statuses = []
     for result in results:
 
-        connector_slug = list(result[0].connector.keys())[0] # e.g googledrive
-        display_name = AVAILABLE_CONNECTORS[connector_slug]['display_name']
+        try:
+            connector_slug = list(result[0].connector.keys())[0] # e.g googledrive
+            display_name = AVAILABLE_CONNECTORS[connector_slug]['display_name']
 
-        celery_task_status = get_celery_task_status(result[0].job_id)['status']
-        display_status = display_task_status(celery_task_status)
+            celery_task_status = get_celery_task_status(result[0].job_id)['status']
+            display_status = display_task_status(celery_task_status)
 
-        files = get_user_files(user_id, connector_slug, db) 
+            files = get_user_files(user_id, connector_slug, db) 
 
-        status = {
-            'connector': {
-                'name': display_name,
-                'slug': connector_slug,
-                'ids': list(result[0].connector.values())[0],
-            },
-            'status': display_status,
-            'files': files,
-            'files_count': len(files),
-        }
-        print(status)
-        statuses.append(status)
+            status = {
+                'connector': {
+                    'name': display_name,
+                    'slug': connector_slug,
+                    'ids': list(result[0].connector.values())[0],
+                },
+                'status': display_status,
+                'files': files,
+                'files_count': len(files) if files else 0,
+            }
+            logger.info(status)
+            statuses.append(status)
+        except Exception as e:
+            logger.error(f"Exception fetching user_id {user_id} connectors: {e}")
 
     return { 'statuses': statuses }
