@@ -1,7 +1,11 @@
 import os
 from enum import Enum
+from cryptography.fernet import Fernet
 from omo_api.conf.auth0 import AUTH0_CORS_IPS
+from omo_api.utils import get_env_var
 
+
+cipher_suite = Fernet(get_env_var('ENCRYPTION_KEY'))
 
 ############################
 ######## Connectors ########

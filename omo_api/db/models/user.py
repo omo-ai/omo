@@ -3,13 +3,14 @@ from typing import List
 from sqlalchemy import Column, ARRAY, String, DateTime, ForeignKey, Enum
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy_json import mutable_json_type
+from sqlalchemy_utils import StringEncryptedType
 from sqlalchemy.dialects.postgresql import JSONB
 
-from omo_api.db.models.common import CommonMixin, Base, TeamMixin
+from omo_api.db.models.common import CommonMixin, Base
 from omo_api.db.models.confluence import AtlassianConfig
 from omo_api.db.models.googledrive import GoogleDriveConfig
 from omo_api.db.models.pinecone import PineconeConfig
-from omo_api.utils.background import TaskStates
+from omo_api.settings import cipher_suite
 
 
 class User(CommonMixin, Base):
@@ -43,5 +44,11 @@ class UserCeleryTasks(Base, CommonMixin):
     job_id: Mapped[str] # task_id
     connector = Column(mutable_json_type(dbtype=JSONB, nested=True), nullable=True) # e.g. { "googledrive": ["connector_id"] }
 
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    user: Mapped['User'] = relationship()
+
+
+class UserAPIKey(Base, CommonMixin):
+    api_key: Mapped[str] = Column(StringEncryptedType(String, cipher_suite))
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
     user: Mapped['User'] = relationship()
