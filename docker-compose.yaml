@@ -34,7 +34,7 @@ services:
       - ./omo_api:/var/www/omo_api
     env_file:
       - ./omo_api/envs/.env.development
-      - "./omo_api/envs/${CUSTOMER_ENV}/.env"
+      - "./omo_api/envs/${ENV_NS}/.env"
     environment:
       PYTHONPATH: "$${PYTHONPATH}:/var/www" # for absolute imports
       PORT: 8000
@@ -60,7 +60,7 @@ services:
       - ./omo_api/:/var/www/omo_api
     env_file:
       - ./omo_api/envs/.env.development
-      - "./omo_api/envs/${CUSTOMER_ENV}/.env"
+      - "./omo_api/envs/${ENV_NS}/.env"
     depends_on:
       - redis
 
@@ -76,7 +76,7 @@ services:
       - ./omo_api/:/var/www/omo_api
     env_file:
       - ./omo_api/envs/.env.development
-      - "./omo_api/envs/${CUSTOMER_ENV}/.env"
+      - "./omo_api/envs/${ENV_NS}/.env"
     depends_on:
       - redis
 

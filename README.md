@@ -1,8 +1,36 @@
+# Quick start
+
+## Configure the environment variables
+
+`cp envs/env.template envs/.env.development`
+
+Open `envs/.env.development` and add values for the environment variables.
+
+### Adding namespaced environment variables
+
+More environment variables can be added in a subfolder under `envs`:
+
+```
+mkdir envs/some_env_vars
+touch envs/some_env_vars/.env
+```
+
+These can be passed in when starting the API. See the next section for more info.
+
 ## Starting the API
 
-`APP_ENV=development CUSTOMER_ENV=some_customer_key docker compose up`
+Use docker compose to start the environment locally:
 
-will include the customer-specific environment variabes under `./omo_api/conf/envs/some_customer_key/.env`
+`APP_ENV=development ENV_NS=some_env_vars docker compose up`
+
+The `ENV_NS` is optional and will include additional environment variabes under `envs/some_env_var/.env` in addition to `.env.development`.
+
+The `ENV_NS` variable is helpful if you want to test different values of environment variables. For example, say you have two teams or customers you want to deploy to, each with their own specific env vars. You can create a
+
+`envs/customer_1/.env` and `envs/customer_2/.env` with customer-specific environment variables to test with. It's more convenient than having a single
+`.env` file that you repeatedly have to change the values for if you want to test different things.
+
+You can check the `env_file` attribute in `docker-compose.yaml` to see how `ENV_NS` is used. 
 
 
 ## Building the Docker images
@@ -29,6 +57,4 @@ kubectl rollout restart deployment omo-celerybeat
 
 Open Issue: https://github.com/slackapi/bolt-python/issues/1006
 
-## Pinecone Limitations
-
-Does not support `score_threshold`: https://github.com/langchain-ai/langchain/discussions/4669
+## How to add a new Connector
