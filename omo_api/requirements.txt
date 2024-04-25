@@ -16,7 +16,6 @@ requests==2.31.0
 tiktoken==0.6.0
 python-dotenv==1.0.0
 beautifulsoup4>=4.12,<5
-#sentence-transformers==0.3.0 # this adds more than 5GB to the docker image. don't install it.
 slack_sdk==3.26.1
 slack_bolt==1.18.0
 psycopg2-binary==2.9.9
@@ -31,6 +30,7 @@ pydantic==1.10.14
 boto3==1.34.11
 aws-secretsmanager-caching==1.1.1.5
 python-slugify==8.0.4
+click==8.1.7
 
 #connectors
 pyairtable==2.2.2

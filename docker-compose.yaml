@@ -54,7 +54,8 @@ services:
     build:
       context: ./omo_api
       dockerfile: build/Dockerfile
-      target: omo_celeryworker
+      target: celeryworker
+    platform: linux/amd64
     command: celery -A workers.background worker -l debug
     volumes:
       - ./omo_api/:/var/www/omo_api
@@ -69,8 +70,9 @@ services:
     container_name: omo_beat_1
     build:
       context: ./omo_api
-      dockerfile: build/docker/Dockerfile
-      target: omo_celerybeat
+      dockerfile: build/Dockerfile
+      target: celerybeat
+    platform: linux/amd64
     command: celery -A workers.background beat -l debug
     volumes:
       - ./omo_api/:/var/www/omo_api

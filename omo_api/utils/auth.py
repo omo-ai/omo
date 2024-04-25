@@ -1,4 +1,5 @@
 import logging
+import secrets
 from datetime import datetime, timedelta
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -125,3 +126,6 @@ def get_aws_secret(secret_name: str, region: str='us-west-2'):
         # https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
         raise e
     return secret
+
+def generate_api_key(length: int = 32) -> str:
+    return secrets.token_hex(length)

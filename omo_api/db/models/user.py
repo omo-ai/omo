@@ -3,15 +3,17 @@ from typing import List
 from sqlalchemy import Column, ARRAY, String, DateTime, ForeignKey, Enum
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy_json import mutable_json_type
-from sqlalchemy_utils import StringEncryptedType
+from sqlalchemy_utils.types.encrypted.encrypted_type import StringEncryptedType, FernetEngine
 from sqlalchemy.dialects.postgresql import JSONB
 
 from omo_api.db.models.common import CommonMixin, Base
 from omo_api.db.models.confluence import AtlassianConfig
 from omo_api.db.models.googledrive import GoogleDriveConfig
 from omo_api.db.models.pinecone import PineconeConfig
-from omo_api.settings import cipher_suite
+from omo_api.utils import get_env_var
 
+
+encryption_key = get_env_var('ENCRYPTION_KEY')
 
 class User(CommonMixin, Base):
     __tablename__ = "users" # avoid collision with postgres schema user
@@ -49,6 +51,7 @@ class UserCeleryTasks(Base, CommonMixin):
 
 
 class UserAPIKey(Base, CommonMixin):
-    api_key: Mapped[str] = Column(StringEncryptedType(String, cipher_suite))
+    api_key: Mapped[str] = Column(StringEncryptedType(String, encryption_key, FernetEngine))
+    is_active: Mapped[bool] = mapped_column(default=True)
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
     user: Mapped['User'] = relationship()
