@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import MultipleResultsFound
 from omo_api.db.models import UserAPIKey, User
 from omo_api.db.connection import session
-from omo_api.utils.auth import generate_api_key
+from omo_api.utils.auth import create_api_key
 from omo_api.settings import cipher_suite
 
 @click.command()
@@ -25,7 +25,7 @@ def create_api_key(userid):
     
     while num_attempts < max_attempts:
 
-        key = generate_api_key()
+        key = create_api_key()
 
         try:
             result = session.query(UserAPIKey).filter(UserAPIKey.api_key == key).count()

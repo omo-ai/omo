@@ -68,7 +68,7 @@ async def install(req: Request):
 async def oauth_redirect(req: Request):
     return await bolt_app_handler.handle(req)
 
-@router.post("/api/v1/slack/message")
+@router.post("/v1/slack/message")
 async def endpoint(req: Request):
     return await bolt_app_handler.handle(req)
 
@@ -118,7 +118,7 @@ def create_slack_response(answer, sources) -> list:
     
     return slack_blocks_template
 
-@router.post('/api/v1/slack/answer')
+@router.post('/v1/slack/answer')
 async def answer_slack(body: SlackMessagePayload,
                        user_context: Annotated[dict, Depends(get_slack_user_context)]):
     start = time.time()

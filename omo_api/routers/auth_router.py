@@ -83,7 +83,7 @@ def create_slack_profile(db: Session,
 
     return slack_user_profile or False
 
-@router.post('/v1/auth/user/register')
+@router.post('/v1/user/register')
 async def register_user(user: UserRegister, db: Session = Depends(get_db)):
 
     user_attr = {
@@ -119,7 +119,7 @@ async def register_user(user: UserRegister, db: Session = Depends(get_db)):
 
     return response_msg
 
-@router.post('/v1/auth/user/login', response_model=Token)
+@router.post('/v1/user/login', response_model=Token)
 async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: Session = Depends(get_db)):
     user = authenticate_user(form_data.username, form_data.password, db)
 

@@ -142,7 +142,7 @@ def sources_from_response(response):
 
     return sources_list
 
-@router.post('/api/v1/chat/')
+@router.post('/v1/chat/')
 async def answer_web(message: Message):
     # TODO the context should be provided by the frontend
     return StreamingResponse(answer_question_stream(message.content,
