@@ -7,13 +7,14 @@ from llama_index.core import Settings
 
 from omo_api.conf.log import log_config
 from omo_api.routers import (
-    auth_router,
-    files_router, 
-    googledrive_router,
-    confluence_router,
-    slack_router,
-    qa,
-    account,
+    # avoid naming collisions with models
+    auth as auth_router,
+    confluence as confluence_router,
+    files as files_router,
+    google_drive as google_drive_router,
+    slack as slack_router,
+    qa as qa_router,
+    user as user_router,
 )
 from omo_api.db.connection import engine
 from omo_api.settings import CORS_ORIGINS, OPENAPI_URL
@@ -27,13 +28,13 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(openapi_url=OPENAPI_URL)
 
-app.include_router(googledrive_router.router)
+app.include_router(google_drive_router.router)
 app.include_router(auth_router.router)
 app.include_router(files_router.router)
 app.include_router(confluence_router.router)
 app.include_router(slack_router.router)
-app.include_router(qa.router)
-app.include_router(account.router)
+app.include_router(qa_router.router)
+app.include_router(user_router.router)
 
 
 Base.metadata.create_all(bind=engine)

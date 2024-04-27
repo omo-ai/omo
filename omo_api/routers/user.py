@@ -50,6 +50,9 @@ def create_vecstore_config(user: User, team: Team, db: Session = Depends(get_db)
     
     return vecstore_config
 
+def create_api_key(user: User, db: Session = Depends(get_db)):
+    pass
+
 def get_installed_connectors(user: User) -> dict:
     installed_connectors = {
         'connectors': []
@@ -103,7 +106,7 @@ def get_user_files(user_id: int, connector_slug: str, db: Session):
 ## Routes ##
 ############
 
-@router.post('/v1/user/register')
+@router.post('/v2/user/register')
 async def register_user(user: UserRegister, db: Session = Depends(get_db)) -> dict:
     user_attr = {
         'email': user.email,
@@ -118,6 +121,7 @@ async def register_user(user: UserRegister, db: Session = Depends(get_db)) -> di
         
     team = create_team(user, db)
     pc_config = create_vecstore_config(user, team, db)
+    api_key = create_api_key(user, db)
 
     response = {
         "message": f"User {user.email} registered.",
