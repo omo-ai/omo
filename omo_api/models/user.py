@@ -6,12 +6,8 @@ from typing import Dict, List, Optional, Union
 class Team(BaseModel):
     name: str
 
-class UserRegister(BaseModel):
-    email: str
-    # these are optional in the case of social logins
-    username: Union[str, None] = None
-    password: Union[str, None] = None
-    slackCode: Union[str, None] = None
+    class Config:
+        orm_mode = True
 
 class User(BaseModel):
     username: str
@@ -27,6 +23,31 @@ class User(BaseModel):
     class Config:
         orm_mode = True
 
+class Account(BaseModel):
+    type: str
+    provider: str
+    provider_account_id: str
+    refresh_token: Union[str, None] = None
+    access_token: Union[str, None] = None
+    expires_at: Union[int, None] = None
+    id_token: Union[str, None] = None
+    scope: Union[str, None] = None
+    session_state: Union[str, None] = None
+    token_type: Union[str, None] = None
+
+    class Config:
+        orm_mode = True
+
+class UserRegistration(BaseModel):
+    email: str
+    # these are optional in the case of social logins
+    username: Union[str, None] = None
+    password: Union[str, None] = None
+    slackCode: Union[str, None] = None
+
+
+class UserAccountRegistration(UserRegistration, Account):
+    name: str
 
 class Token(BaseModel):
     access_token: str
@@ -58,3 +79,5 @@ class UserContext(BaseModel):
     created_at: datetime
     connectors: List[ConnectorContext]
     vector_store: VectorStoreContext
+
+

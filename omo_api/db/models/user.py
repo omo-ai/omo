@@ -1,19 +1,14 @@
-import enum
 from typing import List
-from sqlalchemy import Column, ARRAY, String, DateTime, ForeignKey, Enum
+from sqlalchemy import Column, ARRAY, String, DateTime, ForeignKey, BigInteger, DateTime
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy_json import mutable_json_type
-from sqlalchemy_utils.types.encrypted.encrypted_type import StringEncryptedType, FernetEngine
 from sqlalchemy.dialects.postgresql import JSONB
 
 from omo_api.db.models.common import CommonMixin, Base
 from omo_api.db.models.confluence import AtlassianConfig
 from omo_api.db.models.googledrive import GoogleDriveConfig
 from omo_api.db.models.pinecone import PineconeConfig
-from omo_api.utils import get_env_var
 
-
-encryption_key = get_env_var('ENCRYPTION_KEY')
 
 class User(CommonMixin, Base):
     __tablename__ = "users" # avoid collision with postgres schema user
@@ -26,6 +21,28 @@ class User(CommonMixin, Base):
 
     team_id: Mapped[int] = mapped_column(ForeignKey('team.id'), nullable=True)
     team: Mapped['Team'] = relationship(back_populates='users') # user can belong to a team
+
+
+class Account(CommonMixin, Base):
+    type: Mapped[str]
+    provider: Mapped[str]
+    provider_account_id: Mapped[str]
+    refresh_token: Mapped[str] = mapped_column(nullable=True)
+    access_token: Mapped[str] = mapped_column(nullable=True)
+    expires_at: Mapped[BigInteger] = mapped_column(BigInteger, nullable=True)
+    id_token: Mapped[str] = mapped_column(nullable=True)
+    scope: Mapped[str] = mapped_column(nullable=True)
+    session_state: Mapped[str] = mapped_column(nullable=True)
+    token_type: Mapped[str] = mapped_column(nullable=True)
+
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    user: Mapped['User'] = relationship()
+
+
+class Session(CommonMixin, Base):
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    expires: Mapped[DateTime] = mapped_column(DateTime)
+    session_token: Mapped[str]
 
 
 class Team(Base, CommonMixin):
@@ -50,8 +67,9 @@ class UserCeleryTasks(Base, CommonMixin):
     user: Mapped['User'] = relationship()
 
 
-class UserAPIKey(Base, CommonMixin):
-    api_key: Mapped[str] = Column(StringEncryptedType(String, encryption_key, FernetEngine))
+class APIKey(Base, CommonMixin):
+    hashed_api_key: Mapped[str]
     is_active: Mapped[bool] = mapped_column(default=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    label: Mapped[bool] = mapped_column(nullable=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=True)
     user: Mapped['User'] = relationship()

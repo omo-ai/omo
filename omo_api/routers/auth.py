@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import MultipleResultsFound
 from omo_api.db.utils import get_db, get_or_create
-from omo_api.models.user import UserRegister, Token
+from omo_api.models.user import UserRegistration, Token
 from omo_api.db.models import User, SlackProfile
 from omo_api.utils.auth import get_password_hash, authenticate_user, create_access_token
 from slack_sdk import WebClient
@@ -84,7 +84,7 @@ def create_slack_profile(db: Session,
     return slack_user_profile or False
 
 @router.post('/v1/user/register')
-async def register_user(user: UserRegister, db: Session = Depends(get_db)):
+async def register_user(user: UserRegistration, db: Session = Depends(get_db)):
 
     user_attr = {
         'email': user.email,

@@ -7,19 +7,61 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import NoResultFound
 from omo_api.db.utils import get_db, get_or_create
-from omo_api.models.user import UserRegister, UserContext
-from omo_api.db.models import User, Team, PineconeConfig, UserCeleryTasks
-from omo_api.utils import get_env_var
-from omo_api.utils.background import get_celery_task_status, display_task_status
-from omo_api.utils.vector_store import get_current_vector_store
+from omo_api.models.user import UserAccountRegistration
 from omo_api.settings import AVAILABLE_CONNECTORS, Connector
+from omo_api.db.models import (
+    User,
+    Team,
+    PineconeConfig, 
+    UserCeleryTasks,
+    Account
+)
+from omo_api.utils import (
+    get_env_var, 
+    verify_google_access_token, 
+    get_current_vector_store,
+    get_celery_task_status,
+    display_task_status
+)
 
 logger = logging.getLogger(__name__) 
 
 router = APIRouter()
 
+def create_user(email: str, db: Session) -> tuple:
+    user_attr = {
+        'email': email,
+    }
+    defaults = {
+        'username': None,
+        'hashed_password': 'NOT_SET',
+        'is_active': True
+    }
 
-def create_team(user: User, db: Session = Depends(get_db)):
+    user, created = get_or_create(db, User, defaults=defaults, **user_attr)
+
+    return user, created
+
+def create_account(user: User, account: UserAccountRegistration, db: Session) -> tuple:
+    account_attrs = {
+        'type': account.type,
+        'provider': account.provider,
+        'provider_account_id': account.provider_account_id,
+        'refresh_token': account.refresh_token,
+        'access_token': account.access_token,
+        'expires_at': account.expires_at,
+        'id_token': account.id_token,
+        'scope': account.scope,
+        'session_state': account.session_state,
+        'token_type': account.token_type,
+        'user_id': user.id
+    }
+
+    account, created = get_or_create(db, Account, **account_attrs)
+
+    return account, created
+
+def create_team(user: User, db: Session = Depends(get_db)) -> tuple:
     team_attr = {
         'name': user.email,
         'slug': slugify(user.email),
@@ -34,10 +76,10 @@ def create_team(user: User, db: Session = Depends(get_db)):
         logger.debug(f"could not assign team to user: {e}")
         pass
 
-    return team
+    return team, created
 
 
-def create_vecstore_config(user: User, team: Team, db: Session = Depends(get_db)):
+def create_vecstore_config(user: User, team: Team, db: Session = Depends(get_db)) -> tuple:
     pinecone_kwargs = {
         'index_name': get_env_var('PINECONE_INDEX'),
         'environment': get_env_var('PINECONE_ENV'),
@@ -48,10 +90,7 @@ def create_vecstore_config(user: User, team: Team, db: Session = Depends(get_db)
 
     vecstore_config, created = get_or_create(db, PineconeConfig, **pinecone_kwargs)
     
-    return vecstore_config
-
-def create_api_key(user: User, db: Session = Depends(get_db)):
-    pass
+    return vecstore_config, created
 
 def get_installed_connectors(user: User) -> dict:
     installed_connectors = {
@@ -105,29 +144,23 @@ def get_user_files(user_id: int, connector_slug: str, db: Session):
 ############
 ## Routes ##
 ############
-
 @router.post('/v2/user/register')
-async def register_user(user: UserRegister, db: Session = Depends(get_db)) -> dict:
-    user_attr = {
-        'email': user.email,
-    }
-    defaults = {
-        'username': None,
-        'hashed_password': 'NOT_SET',
-        'is_active': True
-    }
+async def register_user(account: UserAccountRegistration, db: Session = Depends(get_db)) -> dict:
+    valid, token = verify_google_access_token(account.id_token)
 
-    user, created = get_or_create(db, User, defaults=defaults, **user_attr)
-        
-    team = create_team(user, db)
-    pc_config = create_vecstore_config(user, team, db)
-    api_key = create_api_key(user, db)
-
+    if not valid:
+        logger.error('Not a valid access token')
+        raise HTTPException(status_code=403, detail="Invalid access token")
+    
+    user, user_created = create_user(account.email, db)
+    account, account_created = create_account(user, account, db)
+    team, team_created = create_team(user, db)
+    vecstore_config, vecstore_config_created = create_vecstore_config(user, team, db)
+    
     response = {
-        "message": f"User {user.email} registered.",
-        "created": created
+        "message": "User registered.",
     }
-
+ 
     return response
 
 @router.get('/v1/user/', response_model_exclude=['hashed_password', 'username', 'last_login'])

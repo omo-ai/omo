@@ -1,35 +1,39 @@
 import logging
 import secrets
+from typing import Union
 from datetime import datetime, timedelta
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+import botocore 
+import botocore.session 
+from botocore.exceptions import ClientError
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import MultipleResultsFound
-import botocore 
-import botocore.session 
-from botocore.exceptions import ClientError
 from aws_secretsmanager_caching import SecretCache, SecretCacheConfig 
-from typing import Union
+from google.oauth2 import id_token
+from google.auth.transport import requests
+
+from omo_api.utils import get_env_var
 from omo_api.db.utils import get_db
 from omo_api.db.models.user import User
 from omo_api.models.user import TokenData
 
-# TODO store and retrieve from secrets manager
+
 SECRET_KEY = '***REMOVED***'
 ALGORITHM = 'HS256'
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="v1/accounts/token")
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+crypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 logger = logging.getLogger(__name__) #
 
 def verify_password(cleartext_pw: str, hashed_pw: str) -> bool:
-    return pwd_context.verify(cleartext_pw, hashed_pw)
+    return crypt_context.verify(cleartext_pw, hashed_pw)
 
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    return crypt_context.hash(password)
 
 def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None):
     to_encode = data.copy()
@@ -127,5 +131,23 @@ def get_aws_secret(secret_name: str, region: str='us-west-2'):
         raise e
     return secret
 
-def generate_api_key(length: int = 32) -> str:
+def create_api_key(length: int = 32) -> str:
     return secrets.token_hex(length)
+
+def get_api_key_hash(api_key: str) -> str:
+    return crypt_context.hash(api_key)
+
+def verify_api_key(hashed_key: str, plaintext_key: str) -> bool:
+    return crypt_context.verify(plaintext_key, hashed_key)
+
+def verify_google_access_token(token: str) -> tuple:
+    try:
+        idinfo = id_token.verify_oauth2_token(token, requests.Request(), get_env_var('GOOGLE_CLIENT_ID'))
+        google_account_id = idinfo['sub']
+
+        return True, google_account_id
+
+    except ValueError:
+        # Invalid token
+
+        return False, None
