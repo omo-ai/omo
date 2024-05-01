@@ -1,7 +1,7 @@
 import os
 import logging
 from logging.config import dictConfig
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from llama_index.core import Settings
 
@@ -18,7 +18,7 @@ from omo_api.routers import (
 )
 from omo_api.db.connection import engine
 from omo_api.settings import CORS_ORIGINS, OPENAPI_URL
-from omo_api.utils import get_env_var
+from omo_api.utils import get_env_var, valid_api_token
 
 # Necessary for the call to create_all() to create tables
 from omo_api.db.models import *
@@ -28,13 +28,20 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(openapi_url=OPENAPI_URL)
 
-app.include_router(google_drive_router.router)
-app.include_router(auth_router.router)
-app.include_router(files_router.router)
-app.include_router(confluence_router.router)
-app.include_router(slack_router.router)
-app.include_router(qa_router.router)
-app.include_router(user_router.router)
+app.include_router(google_drive_router.router,
+                   dependencies=[Depends(valid_api_token)])
+app.include_router(auth_router.router,
+                   dependencies=[Depends(valid_api_token)])
+app.include_router(files_router.router,
+                   dependencies=[Depends(valid_api_token)])
+app.include_router(confluence_router.router,
+                   dependencies=[Depends(valid_api_token)])
+app.include_router(slack_router.router,
+                   dependencies=[Depends(valid_api_token)])
+app.include_router(qa_router.router,
+                   dependencies=[Depends(valid_api_token)])
+app.include_router(user_router.router,
+                   dependencies=[Depends(valid_api_token)])
 
 
 Base.metadata.create_all(bind=engine)

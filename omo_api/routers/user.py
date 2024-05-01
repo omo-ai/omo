@@ -21,7 +21,8 @@ from omo_api.utils import (
     verify_google_access_token, 
     get_current_vector_store,
     get_celery_task_status,
-    display_task_status
+    display_task_status,
+    valid_api_token
 )
 
 logger = logging.getLogger(__name__) 
@@ -138,14 +139,14 @@ def get_user_files(user_id: int, connector_slug: str, db: Session):
         return files
     
     return []
-        
-
 
 ############
 ## Routes ##
 ############
 @router.post('/v2/user/register')
-async def register_user(account: UserAccountRegistration, db: Session = Depends(get_db)) -> dict:
+async def register_user(account: UserAccountRegistration,
+                        db: Session = Depends(get_db)) -> dict:
+
     valid, token = verify_google_access_token(account.id_token)
 
     if not valid:
@@ -159,8 +160,7 @@ async def register_user(account: UserAccountRegistration, db: Session = Depends(
     
     response = {
         "message": "User registered.",
-    }
- 
+    } 
     return response
 
 @router.get('/v1/user/', response_model_exclude=['hashed_password', 'username', 'last_login'])
