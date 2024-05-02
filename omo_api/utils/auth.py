@@ -1,9 +1,9 @@
 import logging
-import secrets
-from typing import Union
+
+from typing import Union, Annotated
 from datetime import datetime, timedelta
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends, HTTPException, status, Security, Header
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import botocore 
 import botocore.session 
 from botocore.exceptions import ClientError
@@ -19,14 +19,15 @@ from google.auth.transport import requests
 from omo_api.utils import get_env_var
 from omo_api.db.utils import get_db
 from omo_api.db.models.user import User
-from omo_api.models.user import TokenData
+from omo_api.models.user import JWTTokenData
 
 
-SECRET_KEY = '***REMOVED***'
+AUTH_SECRET = get_env_var('AUTH_SECRET')
 ALGORITHM = 'HS256'
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="v1/accounts/token")
 
+http_bearer = HTTPBearer(auto_error=True)
 crypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 logger = logging.getLogger(__name__) #
 
 def verify_password(cleartext_pw: str, hashed_pw: str) -> bool:
@@ -44,7 +45,7 @@ def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None
         expire = datetime.utcnow() + timedelta(minutes=60)
 
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, AUTH_SECRET, algorithm=ALGORITHM)
     return encoded_jwt
     
 
@@ -65,15 +66,14 @@ def authenticate_user(email: str, password: str, db: Session) -> bool:
 
     return False
 
-def get_user(db: Session, username: str) -> User:
+def get_user(db: Session, email: str) -> User:
 
     try:
         stmt = select(
             User.id,
             User.email,
             User.is_active,
-            User.username,
-            User.created_at).filter(User.email == username)
+            User.created_at).filter(User.email == email)
 
         result = db.execute(stmt)
         row = result.one_or_none()
@@ -90,31 +90,34 @@ def parse_jwt_sub(value: str) -> str:
     
     return value
 
-async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = parse_jwt_sub(payload.get("sub"))
-        if username is None:
-            raise credentials_exception
-        token_data = TokenData(username=username)
-    except JWTError:
-        raise credentials_exception
-    user = get_user(db, username=token_data.username)
-    if user is None:
-        raise credentials_exception
-    return user
+# async def get_current_user(token: HTTPAuthorizationCredentials = Depends(http_bearer),
+#                            db: Session = Depends(get_db)):
+#     credentials_exception = HTTPException(
+#         status_code=status.HTTP_401_UNAUTHORIZED,
+#         detail="Could not validate credentials",
+#         headers={"WWW-Authenticate": "Bearer"},
+#     )
+#     try:
+#         logger.debug(token)
+#         payload = jwt.decode(token.credentials, AUTH_SECRET, algorithms=[ALGORITHM])
+#         email: str = parse_jwt_sub(payload.get("sub"))
+#         if email is None:
+#             raise credentials_exception
+#         token_data = JWTTokenData(email=email)
+#     except JWTError:
+#         raise credentials_exception
+#     user = get_user(db, email=token_data.email)
+#     if user is None:
+#         raise credentials_exception
+#     return user
 
 
-async def get_current_active_user(current_user: User = Depends(get_current_user)):
-    if not current_user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
-    #logger.debug('get_active_current_user', current_user.email)
-    return current_user
+# async def get_current_active_user(current_user: User = Depends(get_current_user)):
+#     if not current_user.is_active:
+#         raise HTTPException(status_code=400, detail="Inactive user")
+#     #logger.debug('get_active_current_user', current_user.email)
+#     return current_user
+
 
 
 def get_aws_secret(secret_name: str, region: str='us-west-2'):
@@ -131,23 +134,3 @@ def get_aws_secret(secret_name: str, region: str='us-west-2'):
         raise e
     return secret
 
-def create_api_key(length: int = 32) -> str:
-    return secrets.token_hex(length)
-
-def get_api_key_hash(api_key: str) -> str:
-    return crypt_context.hash(api_key)
-
-def verify_api_key(hashed_key: str, plaintext_key: str) -> bool:
-    return crypt_context.verify(plaintext_key, hashed_key)
-
-def verify_google_access_token(token: str) -> tuple:
-    try:
-        idinfo = id_token.verify_oauth2_token(token, requests.Request(), get_env_var('GOOGLE_CLIENT_ID'))
-        google_account_id = idinfo['sub']
-
-        return True, google_account_id
-
-    except ValueError:
-        # Invalid token
-
-        return False, None

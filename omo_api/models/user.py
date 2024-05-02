@@ -54,8 +54,8 @@ class Token(BaseModel):
     token_type: str
     email: str
 
-class TokenData(BaseModel):
-    username: str
+class JWTTokenData(BaseModel):
+    email: str
 
 class VectorStoreContext(BaseModel):
     id: int

@@ -18,7 +18,7 @@ from omo_api.db.models import (
 )
 from omo_api.utils import (
     get_env_var, 
-    verify_google_access_token, 
+    verify_google_jwt, 
     get_current_vector_store,
     get_celery_task_status,
     display_task_status,
@@ -147,12 +147,6 @@ def get_user_files(user_id: int, connector_slug: str, db: Session):
 async def register_user(account: UserAccountRegistration,
                         db: Session = Depends(get_db)) -> dict:
 
-    valid, token = verify_google_access_token(account.id_token)
-
-    if not valid:
-        logger.error('Not a valid access token')
-        raise HTTPException(status_code=403, detail="Invalid access token")
-    
     user, user_created = create_user(account.email, db)
     account, account_created = create_account(user, account, db)
     team, team_created = create_team(user, db)
