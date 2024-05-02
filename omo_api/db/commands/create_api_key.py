@@ -2,25 +2,25 @@ import sys
 import click
 from sqlalchemy import select
 from sqlalchemy.exc import MultipleResultsFound
-from omo_api.db.models import APIKey, User
+from omo_api.db.models import APIKey, Application
 from omo_api.db.connection import session
 from omo_api.utils import create_api_key, get_api_key_hash
 
 @click.command()
-@click.option('--userid', help='User ID')
-def create_user_api_key(userid):
-    """Generate an API key for a user ID"""
+@click.option('--appid', '-a', help='App ID')
+def create_app_api_key(appid):
+    """Generate an API key for an Application"""
     max_attempts = 5
     num_attempts = 0
 
-    stmt = select(User).where(User.id == userid)
-    user = session.execute(stmt).one_or_none()
+    stmt = select(Application).where(Application.id == appid)
+    app = session.execute(stmt).one_or_none()
 
-    if not user:
+    if not app:
         click.echo('User not found. Exiting')
         raise click.Abort()
     else:
-        user = user[0] # sqlalchemy returns result in a set
+        app = app[0] # sqlalchemy returns result in a set
     
     while num_attempts < max_attempts:
 
@@ -34,9 +34,9 @@ def create_user_api_key(userid):
                 raise MultipleResultsFound
 
             click.echo('Creating new API Key...')
-            user_api_key = APIKey(user_id=user.id, hashed_api_key=hashed_key)
+            app_api_key = APIKey(app_id=app.id, hashed_api_key=hashed_key)
 
-            session.add(user_api_key)
+            session.add(app_api_key)
             session.commit()
             output = f"""
             API Key created! Save this key somewhere safe. We'll only display
@@ -60,4 +60,4 @@ def create_user_api_key(userid):
 
 
 if __name__ == '__main__':
-    create_user_api_key()
+    create_app_api_key()

@@ -8,6 +8,7 @@ from omo_api.db.models.common import CommonMixin, Base
 from omo_api.db.models.confluence import AtlassianConfig
 from omo_api.db.models.googledrive import GoogleDriveConfig
 from omo_api.db.models.pinecone import PineconeConfig
+from omo_api.db.models.application import Application
 
 
 class User(CommonMixin, Base):
@@ -22,6 +23,7 @@ class User(CommonMixin, Base):
     team_id: Mapped[int] = mapped_column(ForeignKey('team.id'), nullable=True)
     team: Mapped['Team'] = relationship(back_populates='users') # user can belong to a team
 
+    apps: Mapped[List['Application']] = relationship()
 
 class Account(CommonMixin, Base):
     type: Mapped[str]
@@ -64,12 +66,4 @@ class UserCeleryTasks(Base, CommonMixin):
     connector = Column(mutable_json_type(dbtype=JSONB, nested=True), nullable=True) # e.g. { "googledrive": ["connector_id"] }
 
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
-    user: Mapped['User'] = relationship()
-
-
-class APIKey(Base, CommonMixin):
-    hashed_api_key: Mapped[str]
-    is_active: Mapped[bool] = mapped_column(default=True)
-    label: Mapped[bool] = mapped_column(nullable=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=True)
     user: Mapped['User'] = relationship()
