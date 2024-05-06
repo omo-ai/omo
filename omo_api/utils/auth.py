@@ -15,15 +15,19 @@ from sqlalchemy.exc import MultipleResultsFound
 from aws_secretsmanager_caching import SecretCache, SecretCacheConfig 
 from google.oauth2 import id_token
 from google.auth.transport import requests
+from fastapi_nextauth_jwt import NextAuthJWT
 
 from omo_api.utils import get_env_var
 from omo_api.db.utils import get_db
 from omo_api.db.models.user import User
-from omo_api.models.user import JWTTokenData
 
+
+ALGORITHM = 'HS256'
 
 AUTH_SECRET = get_env_var('AUTH_SECRET')
-ALGORITHM = 'HS256'
+JWT = NextAuthJWT(
+    secret=AUTH_SECRET,
+)
 
 http_bearer = HTTPBearer(auto_error=True)
 crypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -35,6 +39,7 @@ def verify_password(cleartext_pw: str, hashed_pw: str) -> bool:
 
 def get_password_hash(password: str) -> str:
     return crypt_context.hash(password)
+
 
 def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None):
     to_encode = data.copy()
@@ -69,18 +74,14 @@ def authenticate_user(email: str, password: str, db: Session) -> bool:
 def get_user(db: Session, email: str) -> User:
 
     try:
-        stmt = select(
-            User.id,
-            User.email,
-            User.is_active,
-            User.created_at).filter(User.email == email)
+        stmt = select(User).filter(User.email == email)
 
         result = db.execute(stmt)
-        row = result.one_or_none()
+        row = result.one()[0]
         return row
 
-    except MultipleResultsFound as e:
-        logger.debug("get_user: user does not exist")
+    except Exception as e:
+        logger.error(f"get_user exception: {e}")
         return None        
 
 
@@ -90,35 +91,34 @@ def parse_jwt_sub(value: str) -> str:
     
     return value
 
-# async def get_current_user(token: HTTPAuthorizationCredentials = Depends(http_bearer),
-#                            db: Session = Depends(get_db)):
-#     credentials_exception = HTTPException(
-#         status_code=status.HTTP_401_UNAUTHORIZED,
-#         detail="Could not validate credentials",
-#         headers={"WWW-Authenticate": "Bearer"},
-#     )
-#     try:
-#         logger.debug(token)
-#         payload = jwt.decode(token.credentials, AUTH_SECRET, algorithms=[ALGORITHM])
-#         email: str = parse_jwt_sub(payload.get("sub"))
-#         if email is None:
-#             raise credentials_exception
-#         token_data = JWTTokenData(email=email)
-#     except JWTError:
-#         raise credentials_exception
-#     user = get_user(db, email=token_data.email)
-#     if user is None:
-#         raise credentials_exception
-#     return user
+
+async def user_from_jwt(jwt: Annotated[dict, Depends(JWT)], 
+                        db: Session = Depends(get_db)) -> User:
 
 
-# async def get_current_active_user(current_user: User = Depends(get_current_user)):
-#     if not current_user.is_active:
-#         raise HTTPException(status_code=400, detail="Inactive user")
-#     #logger.debug('get_active_current_user', current_user.email)
-#     return current_user
+    email = jwt.get('email', None)
+
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    if not email:
+        raise credentials_exception
+    
+    user = get_user(db, email)
+
+    if user is None:
+        raise credentials_exception
+
+    return user
 
 
+async def get_current_active_user(current_user: User = Depends(user_from_jwt)) -> User:
+    if not current_user.is_active:
+        raise HTTPException(status_code=400, detail="Inactive user")
+    return current_user
 
 def get_aws_secret(secret_name: str, region: str='us-west-2'):
     secret = None

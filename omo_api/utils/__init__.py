@@ -4,7 +4,9 @@ from .api import (
     verify_api_key,
     get_api_key_hash,
     valid_api_token,
-    verify_google_jwt,
+)
+from .auth import (
+    get_user,
     get_current_active_user,
 )
 from .vector_store import get_current_vector_store
@@ -17,10 +19,10 @@ __all__ = [
     'get_current_vector_store',
     'get_celery_task_status',
     'display_task_status',
-    'verify_google_jwt',
     'create_api_key',
     'verify_api_key',
     'get_api_key_hash',
     'valid_api_token',
     'get_current_active_user',
+    'get_user',
 ]

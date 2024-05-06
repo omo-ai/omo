@@ -1,6 +1,6 @@
 import logging
 from typing import Any
-from fastapi import Depends, APIRouter, HTTPException
+from fastapi import Depends, APIRouter, HTTPException, Response
 from fastapi.encoders import jsonable_encoder
 from slugify import slugify
 from sqlalchemy import select
@@ -18,11 +18,10 @@ from omo_api.db.models import (
 )
 from omo_api.utils import (
     get_env_var, 
-    verify_google_jwt, 
     get_current_vector_store,
     get_celery_task_status,
     display_task_status,
-    valid_api_token
+    get_current_active_user
 )
 
 logger = logging.getLogger(__name__) 
@@ -107,13 +106,13 @@ def get_installed_connectors(user: User) -> dict:
 
     return installed_connectors
 
-def get_user_by_email(email: str, db: Session) -> User:
-    try:
-        user = db.query(User).filter_by(email=email).one()
-    except NoResultFound as e:
-        logger.debug(f"Exception in get_user: {email} {e}")
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
+# def get_user_by_email(email: str, db: Session) -> User:
+#     try:
+#         user = db.query(User).filter_by(email=email).one()
+#     except NoResultFound as e:
+#         logger.debug(f"Exception in get_user: {email} {e}")
+#         raise HTTPException(status_code=404, detail="User not found")
+#     return user
 
 def get_vector_store_config(user: User) -> dict:
     config = {}
@@ -140,26 +139,29 @@ def get_user_files(user_id: int, connector_slug: str, db: Session):
     
     return []
 
+
+
 ############
 ## Routes ##
 ############
-@router.post('/v2/user/register')
-async def register_user(account: UserAccountRegistration,
-                        db: Session = Depends(get_db)) -> dict:
+from fastapi import Cookie, Request, Response, Header, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from typing import Annotated, Union
+http_bearer = HTTPBearer(auto_error=True)
 
-    user, user_created = create_user(account.email, db)
-    account, account_created = create_account(user, account, db)
-    team, team_created = create_team(user, db)
-    vecstore_config, vecstore_config_created = create_vecstore_config(user, team, db)
+from fastapi_nextauth_jwt import NextAuthJWT
+
+JWT = NextAuthJWT(
+    secret=get_env_var("AUTH_SECRET"),
+)
+@router.get('/v1/whoami')
+async def me (user: Annotated[User, Depends(get_current_active_user)]):
+    return { 'email': user.email }
+
+
+@router.get('/v1/me/', response_model_exclude=['hashed_password', 'username', 'last_login'])
+async def get_user(user: Annotated[User, Depends(get_current_active_user)]) -> dict:
     
-    response = {
-        "message": "User registered.",
-    } 
-    return response
-
-@router.get('/v1/user/', response_model_exclude=['hashed_password', 'username', 'last_login'])
-async def get_user(email: str, db: Session = Depends(get_db)) -> dict:
-    user = get_user_by_email(email, db)
     user_dict = jsonable_encoder(user)
     installed_apps_dict = get_installed_connectors(user)
     vecstore_config_dict = get_vector_store_config(user)
@@ -171,11 +173,31 @@ async def get_user(email: str, db: Session = Depends(get_db)) -> dict:
 
     return response_dict
 
+
+@router.post('/v2/user/register')
+async def register_user(account: UserAccountRegistration,
+                        response: Response,
+                        user: str = Depends(get_current_active_user),
+                        db: Session = Depends(get_db)) -> dict:
+
+    user, user_created = create_user(account.email, db)
+    account, account_created = create_account(user, account, db)
+    team, team_created = create_team(user, db)
+    vecstore_config, vecstore_config_created = create_vecstore_config(user, team, db)
+
+    response = {
+        "message": "User registered.",
+    } 
+    return response
+
+
+
 @router.get('/v1/user/connectors')
-async def get_connector_status(user_id: int, db: Session = Depends(get_db)) -> dict:
+async def get_connector_status(user: Annotated[dict, Depends(get_current_active_user)],
+                               db: Session = Depends(get_db)) -> dict:
     
     query = db.query(UserCeleryTasks)\
-            .where(UserCeleryTasks.user_id == user_id)\
+            .where(UserCeleryTasks.user_id == user.id)\
             .distinct(UserCeleryTasks.connector)\
             .order_by(UserCeleryTasks.connector, UserCeleryTasks.updated_at.desc())
     
@@ -192,7 +214,7 @@ async def get_connector_status(user_id: int, db: Session = Depends(get_db)) -> d
             celery_task_status = get_celery_task_status(result[0].job_id)['status']
             display_status = display_task_status(celery_task_status)
 
-            files = get_user_files(user_id, connector_slug, db) 
+            files = get_user_files(user.id, connector_slug, db) 
 
             status = {
                 'connector': {
@@ -207,6 +229,6 @@ async def get_connector_status(user_id: int, db: Session = Depends(get_db)) -> d
             logger.info(status)
             statuses.append(status)
         except Exception as e:
-            logger.error(f"Exception fetching user_id {user_id} connectors: {e}")
+            logger.error(f"Exception fetching user_id {user.id} connectors: {e}")
 
     return { 'statuses': statuses }

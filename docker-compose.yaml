@@ -86,8 +86,8 @@ services:
   websockets:
     hostname: omo_ws_1
     container_name: omo_ws_1
-    # profiles:
-    #   - donotstart # comment out if you want to start this service
+    profiles:
+      - donotstart # comment out if you want to start this service
     build:
       context: ./omo_ws
       dockerfile: Dockerfile
