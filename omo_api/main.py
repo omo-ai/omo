@@ -18,7 +18,7 @@ from omo_api.routers import (
 )
 from omo_api.db.connection import engine
 from omo_api.settings import CORS_ORIGINS, OPENAPI_URL
-from omo_api.utils import get_env_var, valid_api_token, get_current_active_user
+from omo_api.utils import get_env_var, valid_api_token
 
 # Necessary for the call to create_all() to create tables
 from omo_api.db.models import *

@@ -1,8 +1,6 @@
 import os
 from enum import Enum
 from cryptography.fernet import Fernet
-from omo_api.utils import get_env_var
-
 
 
 ############################
