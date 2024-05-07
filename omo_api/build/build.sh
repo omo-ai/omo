@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ECR_URL=187613313731.dkr.ecr.us-west-2.amazonaws.com
-TAG=v0.2.7
+TAG=v0.3.1
 
 
 function authenticate_image_registry() {
@@ -22,7 +22,7 @@ function build_and_push_api() {
     TARGET=api
     echo "Building API Docker image..."
     build_image
-
+    
     echo "Pushing image to ECR..."
     authenticate_image_registry
     push_image

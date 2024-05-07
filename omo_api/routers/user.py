@@ -177,7 +177,6 @@ async def get_user(user: Annotated[User, Depends(get_current_active_user)]) -> d
 @router.post('/v2/user/register')
 async def register_user(account: UserAccountRegistration,
                         response: Response,
-                        user: str = Depends(get_current_active_user),
                         db: Session = Depends(get_db)) -> dict:
 
     user, user_created = create_user(account.email, db)
