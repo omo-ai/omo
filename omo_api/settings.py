@@ -1,7 +1,6 @@
 import os
 from enum import Enum
 from cryptography.fernet import Fernet
-from omo_api.conf.auth0 import AUTH0_CORS_IPS
 from omo_api.utils import get_env_var
 
 
@@ -49,16 +48,11 @@ ACTIVE_VECTOR_STORE = VectorStores.PINECONE
 
 APP_ENV = os.environ.get('APP_ENV', 'development')
 
-AUTH_PROVIDER = 'auth0' # TODO support basic
-
 if APP_ENV == 'production':
     CORS_ORIGINS = [
         "https://api.omo.bot",
         "https://app.helloomo.ai",
     ]
-
-    if AUTH_PROVIDER == 'auth0':
-        CORS_ORIGINS += AUTH0_CORS_IPS
 
     OPENAPI_URL = None # don't publish docs publicly
 

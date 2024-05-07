@@ -159,7 +159,7 @@ async def me (user: Annotated[User, Depends(get_current_active_user)]):
     return { 'email': user.email }
 
 
-@router.get('/v1/me/', response_model_exclude=['hashed_password', 'username', 'last_login'])
+@router.get('/v1/me', response_model_exclude=['hashed_password', 'username', 'last_login'])
 async def get_user(user: Annotated[User, Depends(get_current_active_user)]) -> dict:
     
     user_dict = jsonable_encoder(user)
