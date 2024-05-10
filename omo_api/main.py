@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(openapi_url=OPENAPI_URL)
 
 router_deps = [
-    Depends(valid_api_token),
+    # Depends(valid_api_token),
 ]
 app.include_router(google_drive_router.router, dependencies=router_deps)
 app.include_router(auth_router.router, dependencies=router_deps)

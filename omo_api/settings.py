@@ -48,7 +48,7 @@ APP_ENV = os.environ.get('APP_ENV', 'development')
 
 if APP_ENV == 'production':
     CORS_ORIGINS = [
-        "https://api.omo.bot",
+        "https://api.helloomo.ai",
         "https://app.helloomo.ai",
     ]
 
