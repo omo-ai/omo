@@ -13,6 +13,10 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+def get_chats_for_user(db: Session, user_id: str) -> Optional[Chat]:
+    result = db.query(Chat).filter(Chat.user_id == user_id).all()
+    return result
+
 @router.get("/v1/chats/{chat_id}")
 async def get_chat_by_id(chat_id: str,
                          db: Session = Depends(get_db),
@@ -48,3 +52,9 @@ async def put_chat(chat_id: str,
 
     return chat
 
+@router.get("/v1/chats/")
+async def get_user_chats(user: User = Depends(get_current_active_user),
+                         db: Session = Depends(get_db)):
+
+    chat = get_chats_for_user(db, user.id)
+    return chat
