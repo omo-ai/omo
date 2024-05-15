@@ -15,6 +15,7 @@ from omo_api.routers import (
     slack as slack_router,
     qa as qa_router,
     user as user_router,
+    chats as chat_router,
 )
 from omo_api.db.connection import engine
 from omo_api.settings import CORS_ORIGINS, OPENAPI_URL
@@ -38,6 +39,7 @@ app.include_router(confluence_router.router, dependencies=router_deps)
 app.include_router(slack_router.router, dependencies=router_deps)
 app.include_router(qa_router.router, dependencies=router_deps)
 app.include_router(user_router.router, dependencies=router_deps)
+app.include_router(chat_router.router, dependencies=router_deps)
 
 
 Base.metadata.create_all(bind=engine)
@@ -46,7 +48,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "PUT"],
     allow_headers=["*"],
 )
 

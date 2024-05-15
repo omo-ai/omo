@@ -2,7 +2,7 @@ import json
 import uuid
 import logging
 import redis
-from typing import Any
+from typing import Any, Optional
 from fastapi import Depends, APIRouter, HTTPException, Response
 from fastapi.encoders import jsonable_encoder
 from slugify import slugify
@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import NoResultFound
 from omo_api.db.utils import get_db, get_or_create
 from omo_api.models.user import UserAccountRegistration
+from omo_api.db.models.chat import Chat
 from omo_api.settings import AVAILABLE_CONNECTORS, Connector
 from omo_api.db.models import (
     User,
@@ -33,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-APP_ENV = get_env_var('APP_ENV')
+ENV = get_env_var('ENV')
 
 def create_user(email: str, db: Session) -> tuple:
     user_attr = {
@@ -146,7 +147,9 @@ def get_user_files(user_id: int, connector_slug: str, db: Session):
     
     return []
 
-
+def get_chat_by_user_id(db: Session, user_id: str) -> Optional[Chat]:
+    result = db.query(Chat).filter(Chat.user_id == user_id).one_or_none()
+    return result
 
 ############
 ## Routes ##
@@ -223,7 +226,7 @@ async def create_registration_in_flight(response: Response,
     account_as_string = json.dumps(jsonable_encoder(account))
     cache.hset(key_namespace, mapping={uuid_key: account_as_string})
 
-    secure = True if APP_ENV == 'production' else False
+    secure = True if ENV == 'prod' else False
     response.set_cookie(key='omo.registration_id', value=uuid_key, 
                         secure=secure, samesite='Lax')
     
@@ -269,3 +272,14 @@ async def get_connector_status(user: Annotated[dict, Depends(get_current_active_
             logger.error(f"Exception fetching user_id {user.id} connectors: {e}")
 
     return { 'statuses': statuses }
+
+
+@router.get("/v1/users/{user_id}/chats/")
+async def get_chat_for_user(user_id: str, db: Session = Depends(get_db)):
+    try:
+        chat = get_chat_by_user_id(db, user_id)
+        if chat is None:
+            raise HTTPException(status_code=404, detail="Chat not found")
+        return chat
+    except MultipleResultsFound:
+        raise HTTPException(status_code=400, detail="Multiple chats found for this user")

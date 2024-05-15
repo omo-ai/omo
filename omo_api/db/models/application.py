@@ -1,8 +1,6 @@
 from typing import List
-from sqlalchemy import Column, ARRAY, String, DateTime, ForeignKey, BigInteger, DateTime
+from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship, Mapped, mapped_column
-from sqlalchemy_json import mutable_json_type
-from sqlalchemy.dialects.postgresql import JSONB
 from omo_api.db.models.common import CommonMixin, Base
 
 class Application(CommonMixin, Base):

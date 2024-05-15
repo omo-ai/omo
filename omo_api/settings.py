@@ -44,9 +44,9 @@ ACTIVE_VECTOR_STORE = VectorStores.PINECONE
 #### GENERAL SETTINGS ######
 ############################
 
-APP_ENV = os.environ.get('APP_ENV', 'development')
+ENV = os.environ.get('ENV', 'dev')
 
-if APP_ENV == 'production':
+if ENV in ('production', 'prod'):
     CORS_ORIGINS = [
         "https://api.helloomo.ai",
         "https://app.helloomo.ai",

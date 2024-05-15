@@ -37,7 +37,7 @@ ENCRYPTION_KEY=RMRl4APj5uD4wmlrHAhFUoEp4D1GSiHjQiBDTrPY3CI= # example output. do
 
 Use docker compose to start the environment locally:
 
-`APP_ENV=development ENV_NS=example docker compose up`
+`ENV=dev ENV_NS=example docker compose up`
 
 The `ENV_NS` will include additional environment variabes under `envs/example/.env` in addition to `.env.development`. It's helpful if you want to test different values of environment variables without constantly
 changing the value. For example, if you want to test different values for 2 teams, you can create `envs/team_1/.env` and `envs/team_2/.env`, then set `ENV_NS=team_1` or `ENV_NS=team_2`, when running `docker compose`.

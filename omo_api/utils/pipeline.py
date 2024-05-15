@@ -18,6 +18,8 @@ from llama_index.core.storage.kvstore.types import BaseKVStore
 from llama_index.storage.kvstore.redis import RedisKVStore as RedisCache
 from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.llms.openai import OpenAI
+from llama_index.storage.chat_store.redis import RedisChatStore
+from llama_index.core.memory import ChatMemoryBuffer
 from omo_api.utils import get_env_var, flatten_list
 
 logger = logging.getLogger(__name__)
@@ -124,6 +126,16 @@ class SentenceWindowPipeline:
             return nodes
         except Exception as e:
             logger.error(f"***Exception indexing documents: {e}***")
+
+def get_chat_memory(username: str) -> ChatMemoryBuffer:
+    chat_store = RedisChatStore(get_env_var('REDIS_URL'))
+    chat_memory = ChatMemoryBuffer.from_defaults(
+        token_limit=3000,
+        chat_store=chat_store,
+        chat_store_key=username,
+    )
+
+    return chat_store, chat_memory
     
 def get_pipeline(documents: List[Document], vectore_index: str, namespace: str):
 

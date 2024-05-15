@@ -5,7 +5,7 @@ import logging
 import json
 import asyncio
 from typing import List
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from pinecone.grpc import PineconeGRPC
 from llama_index.core import VectorStoreIndex
@@ -18,8 +18,15 @@ from llama_index.vector_stores.pinecone import PineconeVectorStore
 # from langchain_openai import OpenAIEmbeddings
 # from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 # from langchain.docstore.document import Document
-from omo_api.models.chat import Message
-from omo_api.utils.pipeline import get_chat_model, get_embedding_model, get_vector_store
+from omo_api.db.models import User
+from omo_api.models.chat import Message, MessageUserContext
+from omo_api.utils.pipeline import (
+    get_chat_model, 
+    get_embedding_model,
+    get_vector_store,
+    get_chat_memory
+)
+from omo_api.utils import get_current_active_user
 from omo_api.models.user import UserContext
 
 
@@ -143,7 +150,8 @@ def sources_from_response(response):
     return sources_list
 
 @router.post('/v1/chat/')
-async def answer_web(message: Message):
+async def answer_web(message: MessageUserContext,
+                     user: User = Depends(get_current_active_user)):
     # TODO the context should be provided by the frontend
     return StreamingResponse(answer_question_stream(message.content,
                                                     message.user_context),
@@ -162,15 +170,19 @@ async def answer_question_stream(question: str, user_context: UserContext):
     vector_store = get_vector_store(
         pc_api_key,
         user_context.vector_store.index_name,
-        user_context.vector_store.namespaces[0])
+        user_context.vector_store.namespaces[0]
+    )
 
     index = VectorStoreIndex.from_vector_store(vector_store)
+
+    chat_store, chat_memory = get_chat_memory(username=user_context.email)
 
     # default 3000 token memory
     chat_engine = index.as_chat_engine(
         chat_mode="context",
         llm=llm,
         streaming=True,
+        memory=chat_memory,
         similarity_top_k=2,
         node_postprocessors=[
             MetadataReplacementPostProcessor(target_metadata_key="window")
