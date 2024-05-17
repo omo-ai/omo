@@ -1,6 +1,6 @@
 fastapi==0.104.1
 uvicorn==0.23.2
-llama-index==0.10.18
+llama-index==0.10.37
 llama-index-vector-stores-pinecone==0.1.4
 llama-index-storage-docstore-redis==0.1.2
 llama-index-storage-chat-store-redis==0.1.3
