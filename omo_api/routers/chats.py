@@ -2,6 +2,7 @@ import logging
 from typing import Optional, List
 from fastapi import Depends, APIRouter, HTTPException 
 from fastapi.encoders import jsonable_encoder
+from sqlalchemy import desc
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import MultipleResultsFound
 from omo_api.db.utils import get_db, get_or_create
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 def get_chats_for_user(db: Session, user_id: str) -> Optional[Chat]:
-    result = db.query(Chat).filter(Chat.user_id == user_id).all()
+    result = db.query(Chat).filter(Chat.user_id == user_id).order_by(desc(Chat.updated_at)).all()
     return result
 
 @router.get("/v1/chats/{chat_id}")
