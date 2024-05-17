@@ -8,15 +8,21 @@ from sqlalchemy.exc import MultipleResultsFound
 from omo_api.db.utils import get_db, get_or_create
 from omo_api.db.models import Chat
 from omo_api.utils import get_current_active_user
-from omo_api.models.chat import Message, ChatPayload
+from omo_api.models.chat import Message, ChatPayload, ChatHistoryResponseModel
 from omo_api.db.models import User
 
 logger = logging.getLogger(__name__) 
 
+CHAT_HISTORY_LIMIT = 30
+
 router = APIRouter()
 
-def get_chats_for_user(db: Session, user_id: str) -> Optional[Chat]:
-    result = db.query(Chat).filter(Chat.user_id == user_id).order_by(desc(Chat.updated_at)).all()
+def get_chats_for_user(db: Session, user_id: str, limit=CHAT_HISTORY_LIMIT):
+    result = db.query(Chat.id, Chat.chat_id, Chat.title, Chat.updated_at)\
+            .filter(Chat.user_id == user_id)\
+            .order_by(desc(Chat.updated_at))\
+            .limit(limit)\
+            .all()
     return result
 
 @router.get("/v1/chats/{chat_id}")
@@ -61,7 +67,17 @@ async def put_chat(payload: ChatPayload,
 
 @router.get("/v1/chats/")
 async def get_user_chats(user: User = Depends(get_current_active_user),
-                         db: Session = Depends(get_db)):
+                         db: Session = Depends(get_db)) -> list[ChatHistoryResponseModel]:
 
-    chat = get_chats_for_user(db, user.id)
-    return chat
+    chats = get_chats_for_user(db, user.id)
+
+    chat_history_list = [
+        ChatHistoryResponseModel(
+            id=chat.id,
+            chat_id=chat.chat_id,
+            title=chat.title,
+            updated_at=chat.updated_at
+        ) for chat in chats
+    ]
+
+    return chat_history_list

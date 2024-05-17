@@ -2,8 +2,11 @@ import json
 import uuid
 import logging
 import redis
-from typing import Any, Optional
-from fastapi import Depends, APIRouter, HTTPException, Response
+from typing import Any, Optional, Annotated, Union
+from fastapi import (
+    Depends, APIRouter, HTTPException, Response,
+    Cookie, Request, Header, status
+)
 from fastapi.encoders import jsonable_encoder
 from slugify import slugify
 from sqlalchemy import select
@@ -154,16 +157,7 @@ def get_chat_by_user_id(db: Session, user_id: str) -> Optional[Chat]:
 ############
 ## Routes ##
 ############
-from fastapi import Cookie, Request, Response, Header, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from typing import Annotated, Union
-http_bearer = HTTPBearer(auto_error=True)
 
-from fastapi_nextauth_jwt import NextAuthJWT
-
-JWT = NextAuthJWT(
-    secret=get_env_var("AUTH_SECRET"),
-)
 @router.get('/v1/whoami')
 async def me (user: Annotated[User, Depends(get_current_active_user)]):
     return { 'email': user.email }
@@ -198,39 +192,6 @@ async def register_user(account: UserAccountRegistration,
         "message": "User registered.",
     } 
     return response
-
-@router.get('/v1/users/inflight/{registration_id}')
-async def get_registration_in_flight(registration_id: str, 
-                                     depends=Depends(valid_api_token)):
-    client = get_cache_client()
-    result = client.get(registration_id)
-
-    if not result:
-        raise HTTPException(status_code=404, detail="Registration not found")
-
-    account_info = json.loads(result)
-
-    return {'message': 'Registration found', 'data': account_info}
-
-@router.post('/v1/users/inflight')
-async def create_registration_in_flight(response: Response,
-                                        account: UserAccountRegistration,
-                                        depends=Depends(valid_api_token)):
-    
-    # client.hset('omo:registrations_in_flight', mapping={'b5635b11-8f22-4bbc-af1e-6d520b200560': "{'email': 1}"})
-    cache = get_cache_client()
-
-    key_namespace = "omo:registrations_in_flight"
-    uuid_key = str(uuid.uuid4())
-
-    account_as_string = json.dumps(jsonable_encoder(account))
-    cache.hset(key_namespace, mapping={uuid_key: account_as_string})
-
-    secure = True if ENV == 'prod' else False
-    response.set_cookie(key='omo.registration_id', value=uuid_key, 
-                        secure=secure, samesite='Lax')
-    
-    return { 'message': f"Registration: {uuid_key}"}
 
 @router.get('/v1/users/connectors')
 async def get_connector_status(user: Annotated[dict, Depends(get_current_active_user)],

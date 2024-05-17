@@ -1,3 +1,4 @@
+from datetime import datetime
 from pydantic import BaseModel
 from typing import List, Optional
 from omo_api.models.user import UserContext
@@ -13,3 +14,10 @@ class MessageUserContext(Message):
 class ChatPayload(BaseModel):
     chat_id: str
     messages: List[Message]
+
+
+class ChatHistoryResponseModel(BaseModel):
+    id: int
+    chat_id: str
+    title: str
+    updated_at: datetime
