@@ -25,8 +25,15 @@ from omo_api.db.models.user import User
 ALGORITHM = 'HS256'
 
 AUTH_SECRET = get_env_var('AUTH_SECRET')
+ENV = get_env_var('ENV')
+
+# NextAuth sets the default prefix to __Host, which is stricter than
+# __Secure. but since we're calling api.helloomo.ai from app.helloomo.ai, we need to use __Secure.
+csrf_cookie_name = '__Secure-authjs.csrf-token' if ENV == 'prod' else 'authjs.csrf-token'
+
 JWT = NextAuthJWT(
     secret=AUTH_SECRET,
+    csrf_cookie_name=csrf_cookie_name,
 )
 
 http_bearer = HTTPBearer(auto_error=True)
