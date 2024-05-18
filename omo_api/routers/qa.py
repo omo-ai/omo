@@ -7,6 +7,7 @@ import asyncio
 from typing import List
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
+from fastapi.encoders import jsonable_encoder
 from pinecone.grpc import PineconeGRPC
 from llama_index.core import VectorStoreIndex
 from llama_index.vector_stores.pinecone import PineconeVectorStore
@@ -18,7 +19,7 @@ from llama_index.vector_stores.pinecone import PineconeVectorStore
 # from langchain_openai import OpenAIEmbeddings
 # from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 # from langchain.docstore.document import Document
-from omo_api.db.models import User
+from omo_api.db.models import User, Chat
 from omo_api.models.chat import Message, MessageUserContext
 from omo_api.utils.pipeline import (
     get_chat_model, 
@@ -26,8 +27,12 @@ from omo_api.utils.pipeline import (
     get_vector_store,
     get_chat_memory
 )
+from omo_api.db.utils import get_or_create
+from omo_api.db.connection import session
 from omo_api.utils import get_current_active_user
 from omo_api.models.user import UserContext
+from sqlalchemy import update, func
+from sqlalchemy.sql.functions import coalesce
 
 
 logger = logging.getLogger(__name__)
@@ -82,8 +87,32 @@ def show_prompt() -> str:
     prompt_response = random.choice(prompt_responses)
     return f"{prompt_response} Please wait a few moments..."
 
+def append_to_chat_history(chat_id: str, user: User, question_dict: dict, answer_dict: dict):
+    """Append the question and answer to the chat's history
+    """
+    chat_kwargs = {
+        'user_id': user.id,
+        'chat_id': chat_id,
+    }
 
-def sources_from_response(response):
+    combined_messages =  jsonable_encoder([question_dict, answer_dict]),
+    
+    chat, created = get_or_create(session, Chat, **chat_kwargs)
+
+    if created:
+        chat.title = question_dict['content']
+
+    # two separates queries to keep the messages flat; don't append a list of dicts
+    # i.e. [{ question_dict }, { answer_dict}, ...]
+    stmt = update(Chat)\
+            .where(Chat.chat_id == chat_id, Chat.user_id == user.id)\
+            .values(messages=coalesce(Chat.messages, func.jsonb('{}')) + combined_messages)
+    result = session.execute(stmt)
+    session.commit()
+
+
+
+def sources_from_response(response) -> list:
     """Dedupe and return a source documents
 
     :param response: The response from the ChatEngine
@@ -152,13 +181,28 @@ def sources_from_response(response):
 @router.post('/v1/chat/')
 async def answer_web(message: MessageUserContext,
                      user: User = Depends(get_current_active_user)):
-    # TODO the context should be provided by the frontend
-    return StreamingResponse(answer_question_stream(message.content,
-                                                    message.user_context),
+
+    return StreamingResponse(answer_question_stream(message, user),
                              media_type="application/json")
 
 
-async def answer_question_stream(question: str, user_context: UserContext):
+async def answer_question_stream(message: MessageUserContext, user: User):
+
+    # these will be used to append to the chat's history
+    question_dict = {
+        'role': 'human',
+        'content': message.content
+    }
+
+    answer_dict = {
+        'role': 'assistant',
+        'content': '',
+        'sources': [],
+    }
+
+    question = message.content
+    user_context = message.user_context
+    chat_id = message.chat_id
 
     llm = get_chat_model()
     # no other way to locally use the embedding model
@@ -191,13 +235,18 @@ async def answer_question_stream(question: str, user_context: UserContext):
     response = chat_engine.stream_chat(question)
 
     for token in response.response_gen:
+        answer_dict['content'] += token
         answer_chunk = json.dumps( {'answer': token }, ensure_ascii=False) + '\n'
         yield answer_chunk.encode('utf8')
         await asyncio.sleep(sleep_time)
     
-    sources_dict = sources_from_response(response)
-    sources = json.dumps({ 'sources': sources_dict }, ensure_ascii=False) + '\n'
+    sources_list = sources_from_response(response)
+    sources = json.dumps({ 'sources': sources_list }, ensure_ascii=False) + '\n'
+    answer_dict['sources'] = sources_list
     yield sources.encode('utf8')
+
+    # append the question and answer to the chat's history
+    append_to_chat_history(chat_id, user, question_dict, answer_dict)
 
 
 # def answer_question(question: str, context: dict) -> dict:

@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import MultipleResultsFound
 from omo_api.db.utils import get_db, get_or_create
 from omo_api.db.models import Chat
-from omo_api.utils import get_current_active_user
+from omo_api.utils import flatten_list, get_current_active_user
 from omo_api.models.chat import Message, ChatPayload, ChatHistoryResponseModel
 from omo_api.db.models import User
 
@@ -30,10 +30,14 @@ async def get_chat_by_id(chat_id: str,
                          db: Session = Depends(get_db),
                          user: User = Depends(get_current_active_user)):
 
-    logger.debug('get chats', chat_id)
     chat = db.query(Chat).filter(Chat.chat_id == chat_id, Chat.user_id == user.id).one_or_none()
+
     if chat is None:
         raise HTTPException(status_code=404, detail="Chat not found")
+
+    # retuen a list of flattened list for easier rendering on the frontend
+    chat.messages = flatten_list(chat.messages) 
+
     return chat
 
 

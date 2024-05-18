@@ -7,6 +7,7 @@ class Message(BaseModel):
     role: str
     content: str
     timestamp: Optional[str] = None
+    chat_id: Optional[str] = None
 
 class MessageUserContext(Message):
     user_context: UserContext
