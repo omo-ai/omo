@@ -99,8 +99,18 @@ def append_to_chat_history(chat_id: str, user: User, question_dict: dict, answer
     
     chat, created = get_or_create(session, Chat, **chat_kwargs)
 
+     # TODO this will only work with latin languages. Need to handle other languages
+     # it won't work if the title is in Chinese, for example
+    max_words = 6
     if created:
-        chat.title = question_dict['content']
+        title = question_dict['content']
+        split_title = title.split()
+        if len(split_title) >= max_words:
+            suffix = '...'
+        else:
+            suffix = ''
+
+        chat.title = ' '.join(split_title[:max_words]) + suffix
 
     # two separates queries to keep the messages flat; don't append a list of dicts
     # i.e. [{ question_dict }, { answer_dict}, ...]
