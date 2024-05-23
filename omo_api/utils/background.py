@@ -18,7 +18,8 @@ def get_celery_task_status(task_id: str):
 def display_task_status(status: str):
     """The status to display on the frontend"""
     if status == TaskStates.PENDING.value:
-        return 'starting'
+        # Task ID is pending OR unknown
+        return 'synced'
     if status == TaskStates.PROGRESS.value:
         return 'syncing'
     if status == TaskStates.SUCCESS.value:
