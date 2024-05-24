@@ -197,6 +197,9 @@ async def register_user(account: UserAccountRegistration,
 async def get_connector_status(user: Annotated[dict, Depends(get_current_active_user)],
                                db: Session = Depends(get_db)) -> dict:
     
+    # TODO the connector column may have a connector that was deleted at some
+    # later point in time. leading to a nonexistent connector id
+    # we need to reconcile the connector column with the current connectors
     query = db.query(UserCeleryTasks)\
             .where(UserCeleryTasks.user_id == user.id)\
             .distinct(UserCeleryTasks.connector)\
@@ -221,7 +224,7 @@ async def get_connector_status(user: Annotated[dict, Depends(get_current_active_
                 'connector': {
                     'name': display_name,
                     'slug': connector_slug,
-                    'ids': list(result[0].connector.values())[0],
+                    'id': list(result[0].connector.values())[0][0],
                 },
                 'status': display_status,
                 'files': files,

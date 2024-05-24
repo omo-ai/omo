@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+# TODO requires authentication
 @router.post('/v2/googledrive/files')
 async def process_gdrive_files(files: List[GoogleDriveObject],
                                user_context: UserContext,
