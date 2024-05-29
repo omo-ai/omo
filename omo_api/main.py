@@ -19,7 +19,7 @@ from omo_api.routers import (
 )
 from omo_api.db.connection import engine
 from omo_api.settings import CORS_ORIGINS, OPENAPI_URL
-from omo_api.utils import get_env_var, valid_api_token
+from omo_api.utils import get_env_var, valid_api_token, configure_apm
 
 # Necessary for the call to create_all() to create tables
 from omo_api.db.models import *
@@ -28,23 +28,7 @@ from omo_api.db.models import *
 dictConfig(log_config)
 logger = logging.getLogger(__name__)
 
-ENABLE_SENTRY = os.environ.get('ENABLE_SENTRY', False)
-
-if ENABLE_SENTRY:
-    import sentry_sdk
-
-    SENTRY_DSN = get_env_var('SENTRY_DSN')
-
-    sentry_sdk.init(
-        dsn=SENTRY_DSN,
-        # Set traces_sample_rate to 1.0 to capture 100%
-        # of transactions for performance monitoring.
-        traces_sample_rate=1.0,
-        # Set profiles_sample_rate to 1.0 to profile 100%
-        # of sampled transactions.
-        # We recommend adjusting this value in production.
-        profiles_sample_rate=1.0,
-    )
+configure_apm()
 
 app = FastAPI(openapi_url=OPENAPI_URL)
 
@@ -84,3 +68,7 @@ if llm == 'openai':
 @app.get("/")
 async def root():
     return {"message": "Hello, Omo!"}
+
+@app.get("/sentry-debug")
+async def trigger_error():
+    division_by_zero = 1 / 0

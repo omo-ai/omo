@@ -12,6 +12,7 @@ from .auth import (
 from .vector_store import get_current_vector_store
 from .background import get_celery_task_status, display_task_status
 from .cache import get_cache_client
+from .observability import configure_apm
 
 __all__ = [
     'flatten_list',
@@ -26,5 +27,6 @@ __all__ = [
     'valid_api_token',
     'get_current_active_user',
     'get_user',
-    'get_cache_client'
+    'get_cache_client',
+    'configure_apm',
 ]
