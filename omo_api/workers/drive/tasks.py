@@ -35,22 +35,32 @@ def sync_google_drive(self, files: dict, user_context: dict, access_token: str):
     loader = GoogleDriveReaderOAuthAccessToken(access_token=access_token)
     context = UserContext(**user_context)
 
+
     logger.info(f"indexing for user: {context.email}...")
 
-    folders = filter(lambda f: f['type'] == 'folder', files)
-    files = list(filter(lambda f: f['type'] != 'folder', files))
+    logger.debug(f"...files: {json.dumps(files)}")
+    folders = list(filter(lambda f: f['type'] == 'folder', files)) # folders only
+    files = list(filter(lambda f: f['type'] != 'folder', files)) # everything else
 
     folder_ids = [f['id'] for f in folders]
     file_ids = [f['id'] for f in files]
 
+    logger.info(f"...num folders: {len(folder_ids)}")
+    logger.info(f"...num files: {len(file_ids)}")
+
     all_docs = []
+    # load folders
     for folder_id in folder_ids:
+        logger.info(f"Loading folder: {folder_id}")
         folder_docs = loader.load_data(folder_id=folder_id)
         all_docs.append(folder_docs)
 
-    logger.info(f"...total number of docs: {len(all_docs)}")
+    # load files
+    logger.info(f"Loading file_ids: {file_ids}")
     docs = loader.load_data(file_ids=file_ids)
     all_docs.append(docs)
+
+    logger.info(f"...num all_docs: {len(all_docs)}")
 
     # get the vector store info based on User (fetch from server side)
     # pass into get pipeline and init pinecone

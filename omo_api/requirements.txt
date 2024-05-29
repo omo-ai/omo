@@ -41,6 +41,7 @@ pyairtable==2.2.2
 atlassian-python-api==3.41.3
 python-pptx==0.6.23
 docx2txt==0.8
+transformers==4.41.1
 # torch==2.2.2
 # CPU only pytorch wheel. TODO move this to different service and use GPU
 https://download.pytorch.org/whl/cpu/torch-2.0.0%2Bcpu-cp311-cp311-linux_x86_64.whl
