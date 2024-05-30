@@ -1,6 +1,7 @@
 import os
 import logging
 import tempfile
+import json
 from typing import Optional, List, Any
 from pathlib import Path
 from google.auth.transport.requests import Request
@@ -104,6 +105,7 @@ class GoogleDriveReaderOAuthAccessToken(BasePydanticReader):
                     "mimetype": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
                     "extension": ".pptx",
                 },
+                # PDF
                 "application/pdf": {
                     "mimetype": "application/pdf",
                     "extension": ".pdf",
@@ -300,10 +302,11 @@ class GoogleDriveReaderOAuthAccessToken(BasePydanticReader):
             service = build("drive", "v3", credentials=self._creds)
             file = service.files().get(fileId=fileid, supportsAllDrives=True).execute()
 
-            logger.debug(f"file mimetype:{file['mimeType']}")
+            logger.debug(f"file mimetype: {file['mimeType']}")
 
             # Depending on the mimetype, we have to make a different API call
             if file["mimeType"] in self._mimetypes['google']:
+                logger.debug("...downloading google mimetype")
                 download_mimetype = self._mimetypes['google'][file["mimeType"]]["mimetype"]
                 download_extension = self._mimetypes['google'][file["mimeType"]]["extension"]
                 new_file_name = filename + download_extension
@@ -314,25 +317,29 @@ class GoogleDriveReaderOAuthAccessToken(BasePydanticReader):
                 )
             else:
                 try:
+                    logger.debug("...trying other mimetype")
                     download_extension = self._mimetypes['other'][file['mimeType']]['extension']
                     new_file_name = filename + download_extension
                 except KeyError as e:
                     new_file_name = filename
 
                 # Download file without conversion
+                logger.debug('...request get_media()')
                 request = service.files().get_media(fileId=fileid)
 
             # Download file data
             # creates a temp file e.g.
             # /tmp/tmpf_u0031c/1A6kqGjaSJo4X7Asa2RJsqK6JBZ1nBjgM.pptx
+            logger.debug('...creating tmp file...')
             file_data = BytesIO()
             downloader = MediaIoBaseDownload(file_data, request)
             done = False
 
             while not done:
+                logger.debug('...downloading chunk...')
                 status, done = downloader.next_chunk()
             
-            logger.debug(f"tmp file name {new_file_name}")
+            logger.debug(f"...tmp file name {new_file_name}")
 
             # Save the downloaded file
             with open(new_file_name, "wb") as f:
@@ -382,7 +389,11 @@ class GoogleDriveReaderOAuthAccessToken(BasePydanticReader):
                     temp_dir, 
                     file_metadata=get_metadata,
                 )
+                logger.debug('...loading data from Google Drive')
                 documents = loader.load_data()
+                logger.debug(
+                    f"...loaded {len(documents)} Document chunks from Google Drive."
+                )
                 for doc in documents:
                     doc.id_ = doc.metadata.get("file_id", doc.id_)
 

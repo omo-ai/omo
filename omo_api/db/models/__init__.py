@@ -5,3 +5,4 @@ from .pinecone import *
 from .slack import *
 from .application import *
 from .chat import *
+from .notion import *

@@ -10,11 +10,13 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import MultipleResultsFound
 from omo_api.db.utils import get_db, get_or_create
 from omo_api.models.user import UserRegistration, Token
+from omo_api.models.auth import OAuthProxyRequest
 from omo_api.db.models import User, SlackProfile
 from omo_api.utils.auth import get_password_hash, authenticate_user, create_access_token
 from slack_sdk import WebClient
 from slack_sdk.web.slack_response import SlackResponse
 from slack_sdk.errors import SlackApiError
+import requests
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 60*60*24
 
@@ -140,3 +142,57 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
         "token_type": "bearer",
         "email": user.email, 
     }
+
+
+# Oauth proxy for Connectors that don't support cors
+# e.g. Notion
+# for notion, the shape of the payload is
+# { "endpoint":"https://api.notion.com/v1/oauth/token",
+#   "body":"grant_type=authorization_code&code=***REMOVED***&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fconnectors%2Fnotion",
+#   "headers":{
+#       "content_type":"application/x-www-form-urlencoded",
+#       "authorization":"Basic ***REMOVED***"
+#   }
+# } 
+@router.post('/v1/oauth-proxy/token')
+async def oauth_proxy(payload: OAuthProxyRequest):
+    final_headers = {
+        'Content-Type': payload.headers.content_type,
+        'Authorization': payload.headers.authorization,
+    }
+
+    # TODO put in try catch
+    if payload.endpoint:
+        response = requests.post(
+            payload.endpoint,
+            data=payload.body,
+            headers=final_headers
+        )
+        response_dict = response.json()
+    else:
+        return {'err': 'Invalid payload'}
+
+    # Save the access token to DB
+    access_token = response_dict['access_token']
+
+    app_name = getattr(payload.headers, 'x_connector', None)
+
+
+    response2 = requests.post(
+        "https://api.notion.com/v1/search",
+        headers={
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json",
+            "Notion-Version": "2022-06-28"  # Ensure you're using the correct version
+        },
+        json={
+            "query": "",  # An empty query will return all pages the user has access to
+            "filter": {
+                "value": "page",
+                "property": "object"
+            }
+        }
+    )
+    logger.debug(f"********** {response2.json()}*********")
+
+    return response_dict

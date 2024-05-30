@@ -68,7 +68,3 @@ if llm == 'openai':
 @app.get("/")
 async def root():
     return {"message": "Hello, Omo!"}
-
-@app.get("/sentry-debug")
-async def trigger_error():
-    division_by_zero = 1 / 0

@@ -1,13 +1,13 @@
 #!/bin/bash
 
 ECR_URL=187613313731.dkr.ecr.us-west-2.amazonaws.com
-TAG=v0.4.6
+TAG=v0.4.10
 
 
 function authenticate_image_registry() {
     aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin $ECR_URL    
 }
-
+    
 function build_image() {
     docker build -t $IMAGE:$TAG-amd64 -f Dockerfile --target $TARGET --platform linux/amd64 ../
     docker tag $IMAGE:$TAG-amd64 $ECR_URL/$IMAGE:$TAG-amd64

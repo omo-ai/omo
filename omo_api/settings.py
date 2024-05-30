@@ -2,6 +2,7 @@ import os
 from enum import Enum
 from cryptography.fernet import Fernet
 
+# TODO move this to YAML
 
 ############################
 ######## Connectors ########
@@ -14,6 +15,7 @@ from cryptography.fernet import Fernet
 class Connector(Enum):
     GOOGLE_DRIVE = 'googledrive'
     ATLASSIAN = 'atlassian'
+    NOTION = 'notion'
 
 AVAILABLE_CONNECTORS = {
     Connector.ATLASSIAN.value: {
@@ -21,6 +23,9 @@ AVAILABLE_CONNECTORS = {
     },
     Connector.GOOGLE_DRIVE.value: {
         'display_name': 'Google Drive',
+    },
+    Connector.NOTION.value: {
+        'display_name': 'Notion',
     }
 }
 
