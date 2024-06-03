@@ -56,7 +56,7 @@ services:
       dockerfile: build/Dockerfile
       target: celeryworker
     platform: linux/amd64
-    command: celery -A workers.background worker -l debug
+    command: celery -A workers.background worker -l debug --concurrency=10
     volumes:
       - ./omo_api/:/var/www/omo_api
     env_file:

@@ -28,11 +28,14 @@ async def process_gdrive_files(files: List[GoogleDriveObject],
 
     logger.debug('Submitting celery job')
 
-    task_result = tasks.sync_google_drive.delay(
-        jsonable_encoder(files),
-        jsonable_encoder(user_context),
-        x_google_authorization
-    )
+    chunk_size = 2
+    task_result = tasks.sync_google_drive.chunks(
+        [
+            (jsonable_encoder(file), jsonable_encoder(user_context), x_google_authorization,)
+            for file in files
+        ],
+        chunk_size
+    )()
 
     try:
         # TODO we need to get the connectors from server side

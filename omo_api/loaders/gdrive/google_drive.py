@@ -11,6 +11,11 @@ from llama_index.core.readers.base import BasePydanticReader
 from llama_index.core.bridge.pydantic import PrivateAttr
 from llama_index.core.schema import Document
 from llama_index.core import SimpleDirectoryReader
+from llama_index.readers.file import UnstructuredReader
+
+# Required for pptx reader
+import nltk
+nltk.download('averaged_perceptron_tagger')
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +47,8 @@ SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
 
 # Custom implementation of 
 # https://github.com/run-llama/llama_index/blob/main/llama-index-integrations/readers/llama-index-readers-google/llama_index/readers/google/drive/base.py
+
+
 class GoogleDriveReaderOAuthAccessToken(BasePydanticReader):
 
     client_config: Optional[dict] = None
@@ -315,17 +322,16 @@ class GoogleDriveReaderOAuthAccessToken(BasePydanticReader):
                 request = service.files().export_media(
                     fileId=fileid, mimeType=download_mimetype
                 )
-            else:
-                try:
-                    logger.debug("...trying other mimetype")
-                    download_extension = self._mimetypes['other'][file['mimeType']]['extension']
-                    new_file_name = filename + download_extension
-                except KeyError as e:
-                    new_file_name = filename
+            elif file["mimeType"] in self._mimetypes['other']:
+                logger.debug("...trying other mimetype")
+                download_extension = self._mimetypes['other'][file['mimeType']]['extension']
+                new_file_name = filename + download_extension
 
                 # Download file without conversion
                 logger.debug('...request get_media()')
                 request = service.files().get_media(fileId=fileid)
+            else:
+                raise ValueError(f"Unsupported mimetype: {file['mimeType']}")
 
             # Download file data
             # creates a temp file e.g.
@@ -338,12 +344,15 @@ class GoogleDriveReaderOAuthAccessToken(BasePydanticReader):
             while not done:
                 logger.debug('...downloading chunk...')
                 status, done = downloader.next_chunk()
+                logger.debug('...downloaded chunk...')
             
-            logger.debug(f"...tmp file name {new_file_name}")
+            logger.debug(f"...writing tmp file: {new_file_name}")
 
             # Save the downloaded file
             with open(new_file_name, "wb") as f:
                 f.write(file_data.getvalue())
+
+            logger.debug(f"...done. wrote tmp file: {new_file_name}")
 
             return new_file_name
 
@@ -352,7 +361,7 @@ class GoogleDriveReaderOAuthAccessToken(BasePydanticReader):
                 f"An error occurred while downloading file: {e}", exc_info=True
             )
 
-    def _load_data_fileids_meta(self, fileids_meta: List[List[str]]) -> List[Document]:
+    def _load_data_fileids_meta(self, fileids_meta: List[List[str]], num_workers: int = 1) -> List[Document]:
         """Load data from fileids metadata
         Args:
             fileids_meta: metadata of fileids in google drive.
@@ -385,12 +394,20 @@ class GoogleDriveReaderOAuthAccessToken(BasePydanticReader):
                         "last_modified_date": fileid_meta[5],
                         "source": fileid_meta[6],
                     }
+
                 loader = SimpleDirectoryReader(
                     temp_dir, 
                     file_metadata=get_metadata,
+                    file_extractor={
+                        # the default reader for pptx requires gpu for image 
+                        # captioning, which seems to hang. this is much faster
+                        ".pptx": UnstructuredReader(), 
+                        ".ppt": UnstructuredReader(),
+                        ".docx": UnstructuredReader(),
+                    }
                 )
-                logger.debug('...loading data from Google Drive')
-                documents = loader.load_data()
+                logger.debug(f"...loading data from Google Drive with {num_workers} workers.")
+                documents = loader.load_data(num_workers=num_workers)
                 logger.debug(
                     f"...loaded {len(documents)} Document chunks from Google Drive."
                 )
@@ -403,6 +420,8 @@ class GoogleDriveReaderOAuthAccessToken(BasePydanticReader):
                 f"An error occurred while loading data from fileids meta: {e}",
                 exc_info=True,
             )
+            return [] # return empty list if error
+
 
     def _load_from_file_ids(
         self,
@@ -410,6 +429,7 @@ class GoogleDriveReaderOAuthAccessToken(BasePydanticReader):
         file_ids: List[str],
         mime_types: Optional[List[str]],
         query_string: Optional[str],
+        num_workers: Optional[int] = 1,
     ) -> List[Document]:
         """Load data from file ids
         Args:
@@ -420,6 +440,7 @@ class GoogleDriveReaderOAuthAccessToken(BasePydanticReader):
         Returns:
             Document: List of Documents of text.
         """
+        logger.info('...load from file ids')
         try:
             fileids_meta = []
             for file_id in file_ids:
@@ -431,7 +452,7 @@ class GoogleDriveReaderOAuthAccessToken(BasePydanticReader):
                         query_string=query_string,
                     )
                 )
-            return self._load_data_fileids_meta(fileids_meta)
+            return self._load_data_fileids_meta(fileids_meta, num_workers=num_workers)
         except Exception as e:
             logger.error(
                 f"An error occurred while loading with fileid: {e}", exc_info=True
@@ -443,6 +464,7 @@ class GoogleDriveReaderOAuthAccessToken(BasePydanticReader):
         folder_id: str,
         mime_types: Optional[List[str]],
         query_string: Optional[str],
+        num_workers: Optional[int] = 1,
     ) -> List[Document]:
         """Load data from folder_id.
 
@@ -455,14 +477,16 @@ class GoogleDriveReaderOAuthAccessToken(BasePydanticReader):
         Returns:
             Document: List of Documents of text.
         """
+        logger.info('...load from folder')
         try:
             fileids_meta = self._get_fileids_meta(
                 drive_id=drive_id,
                 folder_id=folder_id,
                 mime_types=mime_types,
                 query_string=query_string,
+
             )
-            return self._load_data_fileids_meta(fileids_meta)
+            return self._load_data_fileids_meta(fileids_meta, num_workers=num_workers)
         except Exception as e:
             logger.error(
                 f"An error occurred while loading from folder: {e}", exc_info=True
@@ -475,6 +499,7 @@ class GoogleDriveReaderOAuthAccessToken(BasePydanticReader):
         file_ids: Optional[List[str]] = None,
         mime_types: Optional[List[str]] = None,  # Deprecated
         query_string: Optional[str] = None,
+        num_workers: Optional[int] = 1,
     ) -> List[Document]:
         """Load data from the folder id or file ids.
 
@@ -492,10 +517,10 @@ class GoogleDriveReaderOAuthAccessToken(BasePydanticReader):
         self._creds = self._get_credentials()
 
         if folder_id:
-            return self._load_from_folder(drive_id, folder_id, mime_types, query_string)
+            return self._load_from_folder(drive_id, folder_id, mime_types, query_string, num_workers=num_workers)
         elif file_ids:
             return self._load_from_file_ids(
-                drive_id, file_ids, mime_types, query_string
+                drive_id, file_ids, mime_types, query_string, num_workers=num_workers
             )
         else:
             logger.warning("Either 'folder_id' or 'file_ids' must be provided.")

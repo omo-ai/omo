@@ -1,5 +1,6 @@
 import json
 import math
+import billiard as multiprocessing
 from sqlalchemy import update, select, func
 from sqlalchemy.sql.functions import coalesce
 from sqlalchemy.dialects.postgresql import JSONB
@@ -12,14 +13,16 @@ from omo_api.db.models.googledrive import GoogleDriveConfig
 from omo_api.db.connection import session
 from omo_api.db.utils import get_or_create
 from omo_api.utils.background import TaskStates
+from omo_api.utils import flatten_list
 
 logger = get_task_logger(__name__) 
 
 @celery.task(bind=True)
-def sync_google_drive(self, files: dict, user_context: dict, access_token: str):
+def sync_google_drive(self, file: dict, user_context: dict, access_token: str):
 
-    def update_db(files: dict, user_ctx: UserContext):
-        files_dict = {f['id']: f for f in files}
+    def update_db(file: dict, user_ctx: UserContext):
+        # files_dict = {f['id']: f for f in files}
+        files_dict = { file['id']: file }
         config_kwargs = {
             'team_id': user_ctx.team_id
         }
@@ -32,50 +35,68 @@ def sync_google_drive(self, files: dict, user_context: dict, access_token: str):
         result = session.execute(stmt)
         session.commit()
 
+    logger.debug('Starting sync_google_drive task')
+
+    # self.update_state(state=TaskStates.PROGRESS.value)
+
     loader = GoogleDriveReaderOAuthAccessToken(access_token=access_token)
     context = UserContext(**user_context)
 
-
     logger.info(f"indexing for user: {context.email}...")
 
-    logger.debug(f"...files: {json.dumps(files)}")
-    folders = list(filter(lambda f: f['type'] == 'folder', files)) # folders only
-    files = list(filter(lambda f: f['type'] != 'folder', files)) # everything else
-
-    folder_ids = [f['id'] for f in folders]
-    file_ids = [f['id'] for f in files]
-
-    logger.info(f"...num folders: {len(folder_ids)}")
-    logger.info(f"...num files: {len(file_ids)}")
-
     all_docs = []
-    # load folders
-    for folder_id in folder_ids:
-        logger.info(f"Loading folder: {folder_id}")
-        folder_docs = loader.load_data(folder_id=folder_id)
+    file_type = file['type']
+
+    # Anything > 1 leads to 
+    # AssertionError: daemonic processes are not allowed to have children
+    num_workers = 1
+
+    if file_type == 'folder':
+        folder_docs = loader.load_data(
+            folder_id=file['id'],
+            num_workers=num_workers,
+        )
         all_docs.append(folder_docs)
+    elif file_type == 'file':
+        docs = loader.load_data(
+            file_ids=[file['id']],
+            num_workers=num_workers,
+        )
+        all_docs.append(docs)
+    else:
+        logger.error(f"Invalid file type: {file['type']}")
+        return
 
-    # load files
-    logger.info(f"Loading file_ids: {file_ids}")
-    docs = loader.load_data(file_ids=file_ids)
-    all_docs.append(docs)
+    logger.debug(f"...num all_docs: {len(all_docs)}")
 
-    logger.info(f"...num all_docs: {len(all_docs)}")
-
+    if not all_docs:
+        logger.info('...all_docs empty')
+        return
+    
     # get the vector store info based on User (fetch from server side)
     # pass into get pipeline and init pinecone
+    # note namespaces are created automatically if it doesn't exist
     index = context.vector_store.index_name
     namespace = context.vector_store.namespaces[0] # currently user only has one namespace
     logger.info(f"...writing to index:namespace {index}:{namespace}")
-    # note namespaces are created automatically if it doesn't exist
 
     pipeline, vecstore, docstore, cache = get_pipeline(all_docs, index, namespace)
 
-    nodes = pipeline.run(num_workers=1) # anything > 1 results in AttributeError: Can't pickle local object 'split_by_sentence_tokenizer.<locals>.split'
-    logger.info(f"...pipelines nodes: {len(nodes)}")
+    # anything > 1 daemonic processes are not allowed to have children
+    # seems to be becauase celery uses a custom implementatio of multiprocessing
+    # called billiard, and llama-index uses the standard multiprocessing
+    nodes = pipeline.run(num_workers=1)
+
+    num_nodes = len(nodes) if nodes else 0
+
+    logger.debug("...pipelines nodes: %d" % num_nodes)
+
+    if not nodes:
+        logger.info('...no nodes. exiting')
+        return
 
     batches_inserted = 0
-    total_batches = math.ceil(len(nodes) / DEFAULT_BATCH_SIZE)
+    total_batches = math.ceil(num_nodes / DEFAULT_BATCH_SIZE)
     for chunk in chunks(nodes, batch_size=DEFAULT_BATCH_SIZE):
         try:
             vecstore.add(chunk)
@@ -90,10 +111,10 @@ def sync_google_drive(self, files: dict, user_context: dict, access_token: str):
             logger.error(f"Cannot add chunk: {e}")
             continue
 
+    if nodes:
+        # only write the files to db if we could successfully add to vec store
+        logger.info("updating db...")
+        update_db(file, context)
+
     logger.info(f"...Done indexing for user: {context.email}")
-    logger.info("updating db...")
-    update_db(files, context)
-
-
-
-        
+    
