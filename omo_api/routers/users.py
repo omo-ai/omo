@@ -27,6 +27,7 @@ from omo_api.utils import (
     get_env_var, 
     get_current_vector_store,
     get_celery_task_status,
+    get_celery_group_status,
     display_task_status,
     get_current_active_user,
     get_cache_client,
@@ -215,8 +216,12 @@ async def get_connector_status(user: Annotated[dict, Depends(get_current_active_
             connector_slug = list(result[0].connector.keys())[0] # e.g googledrive
             display_name = AVAILABLE_CONNECTORS[connector_slug]['display_name']
 
-            celery_task_status = get_celery_task_status(result[0].job_id)['status']
-            display_status = display_task_status(celery_task_status)
+            group_or_task_id = result[0].job_id
+            if group_or_task_id.startswith('group_id:'):
+                display_status, pct_complete = get_celery_group_status(group_or_task_id.replace('group_id:', ''))
+            else:
+                celery_task_status = get_celery_task_status(result[0].job_id)['status']
+                display_status = display_task_status(celery_task_status)
 
             files = get_user_files(user.id, connector_slug, db) 
 
@@ -227,6 +232,7 @@ async def get_connector_status(user: Annotated[dict, Depends(get_current_active_
                     'id': list(result[0].connector.values())[0][0],
                 },
                 'status': display_status,
+                'pct_complete': pct_complete if pct_complete else '',
                 'files': files,
                 'files_count': len(files) if files else 0,
             }

@@ -7,7 +7,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from celery.utils.log import get_task_logger
 from omo_api.loaders.gdrive.google_drive import GoogleDriveReaderOAuthAccessToken
 from omo_api.workers.background import celery
-from omo_api.utils.pipeline import get_pipeline, chunks, DEFAULT_BATCH_SIZE
+from omo_api.utils.pipeline import get_pipeline, chunks, write_nodes_to_vecstore, DEFAULT_BATCH_SIZE
 from omo_api.models.user import UserContext
 from omo_api.db.models.googledrive import GoogleDriveConfig
 from omo_api.db.connection import session
@@ -37,7 +37,7 @@ def sync_google_drive(self, file: dict, user_context: dict, access_token: str):
 
     logger.debug('Starting sync_google_drive task')
 
-    # self.update_state(state=TaskStates.PROGRESS.value)
+    # self.update_state(task_id=self.request.id, state=TaskStates.PROGRESS.value)
 
     loader = GoogleDriveReaderOAuthAccessToken(access_token=access_token)
     context = UserContext(**user_context)
@@ -95,21 +95,7 @@ def sync_google_drive(self, file: dict, user_context: dict, access_token: str):
         logger.info('...no nodes. exiting')
         return
 
-    batches_inserted = 0
-    total_batches = math.ceil(num_nodes / DEFAULT_BATCH_SIZE)
-    for chunk in chunks(nodes, batch_size=DEFAULT_BATCH_SIZE):
-        try:
-            vecstore.add(chunk)
-            batches_inserted += 1
-
-            # Track progress in celery
-            self.update_state(state=TaskStates.PROGRESS.value,
-                              meta={'done': batches_inserted, 'total': total_batches})
-
-            logger.info(f"Added batch {batches_inserted} of {total_batches}")
-        except Exception as e:
-            logger.error(f"Cannot add chunk: {e}")
-            continue
+    batches_inserted, total_batches = write_nodes_to_vecstore(nodes, vecstore)
 
     if nodes:
         # only write the files to db if we could successfully add to vec store

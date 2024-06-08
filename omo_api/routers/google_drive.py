@@ -35,7 +35,11 @@ async def process_gdrive_files(files: List[GoogleDriveObject],
             for file in files
         ],
         chunk_size
-    )()
+    ).apply_async()
+    logger.debug(f"group_id: {task_result.id}")
+    # write the Task Set ID (aka GroupResult) to the backend (Redis) so we can
+    # retrieve it and the child IDs and their status later
+    task_result.save() 
 
     try:
         # TODO we need to get the connectors from server side
@@ -49,7 +53,7 @@ async def process_gdrive_files(files: List[GoogleDriveObject],
         stmt = insert(UserCeleryTasks)\
                 .values(
                     user_id=user_context.id,
-                    job_id=task_result.id,
+                    job_id=f"group_id:{task_result.id}",
                     connector={Connector.GOOGLE_DRIVE.value: connector_ids}
                 )
         result = db.execute(stmt)

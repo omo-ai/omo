@@ -1,4 +1,5 @@
 import os
+import math
 import logging
 import itertools
 from typing import List
@@ -162,3 +163,18 @@ def get_pipeline(documents: List[Document], vectore_index: str, namespace: str):
     )
     logger.info(f"got pipeline")
     return pipeline, vecstore, docstore, ingestion_cache
+
+def write_nodes_to_vecstore(nodes, vector_store):
+    batches_inserted = 0
+    total_batches = math.ceil(len(nodes) / DEFAULT_BATCH_SIZE)
+    for chunk in chunks(nodes, batch_size=DEFAULT_BATCH_SIZE):
+        try:
+            vector_store.add(chunk)
+            batches_inserted += 1
+
+            logger.info(f"Added batch {batches_inserted} of {total_batches}")
+        except Exception as e:
+            logger.error(f"Cannot add chunk: {e}")
+            continue
+
+    return batches_inserted, total_batches
