@@ -213,6 +213,7 @@ async def get_connector_status(user: Annotated[dict, Depends(get_current_active_
     for result in results:
 
         try:
+            pct_complete = None
             connector_slug = list(result[0].connector.keys())[0] # e.g googledrive
             display_name = AVAILABLE_CONNECTORS[connector_slug]['display_name']
 
@@ -236,9 +237,9 @@ async def get_connector_status(user: Annotated[dict, Depends(get_current_active_
                 'files': files,
                 'files_count': len(files) if files else 0,
             }
-            logger.info(status)
             statuses.append(status)
         except Exception as e:
+
             logger.error(f"Exception fetching user_id {user.id} connectors: {e}")
 
     return { 'statuses': statuses }
