@@ -10,7 +10,7 @@ from omo_api.models.user import UserContext
 from omo_api.workers.drive import tasks
 from omo_api.db.models.user import UserCeleryTasks
 from omo_api.db.utils import get_db
-from omo_api.settings import Connector
+from omo_api.config import Connector
 
 # since environment variable it's a relative to the root of the project, not this file
 os.environ['GOOGLE_ACCOUNT_FILE'] = './routers/google_service_key.json'

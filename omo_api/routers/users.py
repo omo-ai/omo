@@ -15,7 +15,7 @@ from sqlalchemy.exc import NoResultFound
 from omo_api.db.utils import get_db, get_or_create
 from omo_api.models.user import UserAccountRegistration
 from omo_api.db.models.chat import Chat
-from omo_api.settings import AVAILABLE_CONNECTORS, Connector
+from omo_api.config import config, Connector
 from omo_api.db.models import (
     User,
     Team,
@@ -108,8 +108,8 @@ def get_installed_connectors(user: User) -> dict:
     installed_connectors = {
         'connectors': []
     }
-    for app in AVAILABLE_CONNECTORS.keys():
-        app_configs = getattr(user.team, f"{app}_configs", None)
+    for app in config['connectors']:
+        app_configs = getattr(user.team, f"{app['name']}_configs", None)
         # user has existing configs i.e. it's installed
         if not app_configs:
             continue
@@ -215,7 +215,7 @@ async def get_connector_status(user: Annotated[dict, Depends(get_current_active_
         try:
             pct_complete = None
             connector_slug = list(result[0].connector.keys())[0] # e.g googledrive
-            display_name = AVAILABLE_CONNECTORS[connector_slug]['display_name']
+            display_name = config['connectors'][connector_slug]['display_name']
 
             group_or_task_id = result[0].job_id
             logger.debug(f"connector status: group_or_task_id: {group_or_task_id}")

@@ -1,16 +1,15 @@
 connectors:
-  - name: 'googledrive'
+  googledrive:
     display_name: 'Google Drive'
-    display: true
-  - name: 'notion'
+    enabled: true
+  notion:
     display_name: 'Notion'
-    display: true
-  - name: 'confluence'
+    enabled: true
+  confluence:
     display_name: 'Confluence'
-    display: false
+    enabled: false
 
 vector_stores:
-  - name: 'pinecone'
+  pinecone:
     display_name: 'Pinecone'
-    display: true
-    active: true
+    enabled: true

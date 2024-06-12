@@ -1,4 +1,15 @@
 import yaml
+from enum import Enum
+
+# To add a new Connector:
+# 1. Add a new name to the Connectors class
+# 2. Add it to config.yaml. Ensure the name in config.yaml matches the value 
+# in the Connectors class
+
+class Connector(Enum):
+    GOOGLE_DRIVE = 'googledrive'
+    ATLASSIAN = 'atlassian'
+    NOTION = 'notion'
 
 def load_config(path: str) -> dict:
     """

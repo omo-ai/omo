@@ -7,18 +7,18 @@ logger = logging.getLogger(__name__)
 def test_get_active_vector_store():
     # Test case 1: Active vector store exists
     config['vector_stores'] = [
-        {'name': 'store1', 'display_name': 'Store 1', 'active': False},
-        {'name': 'store2', 'display_name': 'Store 2', 'active': True},
-        {'name': 'store3', 'display_name': 'Store 3', 'active': False},
+        {'name': 'store1', 'display_name': 'Store 1', 'enabled': False},
+        {'name': 'store2', 'display_name': 'Store 2', 'enabled': True},
+        {'name': 'store3', 'display_name': 'Store 3', 'enabled': False},
     ]
     active_store = get_active_vector_store()
     assert active_store == {'name': 'store2', 'display_name': 'Store 2'}
 
     # Test case 2: No active vector store
     config['vector_stores'] = [
-        {'name': 'store1', 'display_name': 'Store 1', 'active': False},
-        {'name': 'store2', 'display_name': 'Store 2', 'active': False},
-        {'name': 'store3', 'display_name': 'Store 3', 'active': False},
+        {'name': 'store1', 'display_name': 'Store 1', 'enabled': False},
+        {'name': 'store2', 'display_name': 'Store 2', 'enabled': False},
+        {'name': 'store3', 'display_name': 'Store 3', 'enabled': False},
     ]
     active_store = get_active_vector_store()
     assert active_store is None

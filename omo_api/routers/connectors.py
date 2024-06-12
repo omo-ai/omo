@@ -5,9 +5,8 @@ from fastapi import Depends, APIRouter, HTTPException
 from sqlalchemy.orm import Session
 from omo_api.db.utils import get_db
 from omo_api.utils import get_current_active_user
-from omo_api.db.models import User
-from omo_api.settings import Connector
-from omo_api.db.models import GoogleDriveConfig
+from omo_api.db.models import User, GoogleDriveConfig
+from omo_api.config import Connector
 
 logger = logging.getLogger(__name__) 
 
