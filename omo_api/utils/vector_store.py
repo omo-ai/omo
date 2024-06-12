@@ -14,8 +14,9 @@ def get_active_vector_store() -> Optional[Dict]:
     """
     try:
         for vs in config['vector_stores']:
-            if vs['active']:
-                return { 'name': vs['name'], 'display_name': vs['display_name'] }
+            vs_config = config['vector_stores'][vs]
+            if vs_config['enabled']:
+                return { 'name': vs, 'display_name': vs_config['display_name'] }
 
     except Exception as e:
         logger.error(f"Could not get active vector store: {e}")

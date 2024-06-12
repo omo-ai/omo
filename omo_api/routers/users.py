@@ -109,7 +109,7 @@ def get_installed_connectors(user: User) -> dict:
         'connectors': []
     }
     for app in config['connectors']:
-        app_configs = getattr(user.team, f"{app['name']}_configs", None)
+        app_configs = getattr(user.team, f"{app}_configs", None)
         # user has existing configs i.e. it's installed
         if not app_configs:
             continue
