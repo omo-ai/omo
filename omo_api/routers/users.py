@@ -25,7 +25,7 @@ from omo_api.db.models import (
 )
 from omo_api.utils import (
     get_env_var, 
-    get_current_vector_store,
+    get_active_vector_store,
     get_celery_task_status,
     get_celery_group_status,
     display_task_status,
@@ -128,7 +128,7 @@ def get_installed_connectors(user: User) -> dict:
 
 def get_vector_store_config(user: User) -> dict:
     config = {}
-    vecstore = get_current_vector_store()
+    vecstore = get_active_vector_store()['name']
     keys = ['id', 'index_name', 'environment', 'namespaces', 'created_at', 'updated_at']
     config['vector_store'] = {key: "" for key in keys}
     config['vector_store']['provider'] = vecstore

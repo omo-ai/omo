@@ -1,8 +1,8 @@
 import os
+import yaml
 from enum import Enum
 from cryptography.fernet import Fernet
 
-# TODO move this to YAML
 
 ############################
 ######## Connectors ########

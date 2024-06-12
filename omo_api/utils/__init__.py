@@ -14,7 +14,7 @@ from .background import (
     display_task_status,
     get_celery_group_status
 )
-from .vector_store import get_current_vector_store
+from .vector_store import get_active_vector_store 
 from .cache import get_cache_client
 from .observability import configure_apm
 
@@ -22,7 +22,7 @@ __all__ = [
     'flatten_list',
     'clean_url',
     'get_env_var',
-    'get_current_vector_store',
+    'get_active_vector_store',
     'get_celery_task_status',
     'get_celery_group_status',
     'display_task_status',
