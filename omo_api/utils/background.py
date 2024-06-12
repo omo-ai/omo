@@ -1,6 +1,7 @@
 import enum
 import logging
 from celery.result import GroupResult
+from .exceptions import CeleryGroupError
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,10 @@ def get_celery_group_progress(group_id: str) -> list:
     from omo_api.workers.background import celery
     try:
         gr = GroupResult.restore(group_id)
+
+        if not gr:
+            raise CeleryGroupError(f"Task group {group_id} not found")
+
         group_progress = { 
             'group_id': group_id,
             'num_tasks': len(gr.children), 
@@ -56,9 +61,13 @@ def get_celery_group_progress(group_id: str) -> list:
 def get_celery_group_status(group_id: str) -> tuple:
     progress = get_celery_group_progress(group_id)
 
-    if not progress or progress['num_failed']:
-        logger.error(f"Group {group_id} failed: { progress['num_failed'] } tasks failed")
+    if not progress or 'num_failed' not in progress:
+        logger.error(f"Group {group_id} not found")
         return 'error', 0.0
+
+    if progress['num_failed']:
+        logger.error(f"Group {group_id} failed: { progress['num_failed'] } tasks failed")
+        return 'failed', 0.0
 
     pct_complete = progress['num_success'] / progress['num_tasks']
 

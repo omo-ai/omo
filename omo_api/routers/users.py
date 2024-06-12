@@ -218,8 +218,10 @@ async def get_connector_status(user: Annotated[dict, Depends(get_current_active_
             display_name = AVAILABLE_CONNECTORS[connector_slug]['display_name']
 
             group_or_task_id = result[0].job_id
+            logger.debug(f"connector status: group_or_task_id: {group_or_task_id}")
             if group_or_task_id.startswith('group_id:'):
-                display_status, pct_complete = get_celery_group_status(group_or_task_id.replace('group_id:', ''))
+                gid = group_or_task_id.replace('group_id:', '')
+                display_status, pct_complete = get_celery_group_status(gid)
             else:
                 celery_task_status = get_celery_task_status(result[0].job_id)['status']
                 display_status = display_task_status(celery_task_status)
