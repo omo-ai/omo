@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 class OAuthProxyHeaders(BaseModel):
     content_type: str
+    accept: Optional[str] = None
     authorization: Optional[str] = None
     x_connector: Optional[str] = None
 

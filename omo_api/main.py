@@ -8,14 +8,15 @@ from omo_api.conf.log import log_config
 from omo_api.routers import (
     # avoid naming collisions with models
     auth as auth_router,
+    chats as chat_router,
     confluence as confluence_router,
+    connectors as connectors_router,
     files as files_router,
     google_drive as google_drive_router,
-    slack as slack_router,
+    notion as notion_router,
     qa as qa_router,
+    slack as slack_router,
     users as user_router,
-    chats as chat_router,
-    connectors as connectors_router,
 )
 from omo_api.db.connection import engine
 from omo_api.settings import CORS_ORIGINS, OPENAPI_URL
@@ -44,6 +45,7 @@ app.include_router(qa_router.router, dependencies=router_deps)
 app.include_router(user_router.router, dependencies=router_deps)
 app.include_router(chat_router.router, dependencies=router_deps)
 app.include_router(connectors_router.router, dependencies=router_deps)
+app.include_router(notion_router.router, dependencies=router_deps)
 
 
 Base.metadata.create_all(bind=engine)
