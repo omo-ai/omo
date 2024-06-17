@@ -10,6 +10,6 @@ from omo_api.utils import get_env_var
 encryption_key = get_env_var('ENCRYPTION_KEY')
 
 class NotionConfig(CommonMixin, Base, TeamMixin):
-    integration_token: Mapped[str] = Column(EncryptedType(String, encryption_key))
+    oauth_token: Mapped[str] = Column(EncryptedType(String, encryption_key))
     page_ids: Mapped[ARRAY] = mapped_column(ARRAY(String), nullable=True)
     database_ids: Mapped[ARRAY] = mapped_column(ARRAY(String), nullable=True)
