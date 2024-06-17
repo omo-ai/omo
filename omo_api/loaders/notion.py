@@ -10,7 +10,7 @@ from omo_api.utils.prompt import query_yes_no
 logger = logging.getLogger(__name__)
 
 """
-Uses llama-index document loaders. As of this writing, langchain
+Uses llama-index document readers. As of this writing, langchain
 can only load databases, not pages. llama-index can handle both.
 """
 class NotionWorker(BaseWorker):
@@ -54,18 +54,7 @@ class NotionWorker(BaseWorker):
             db_docs.append(documents)
 
         return flatten_list(db_docs)
-    
-    # def get_source_url(self, page_or_db_id: str):
-    #     cleaned_id = page_or_db_id.replace('-', '') 
-    #     return f"{self.base_url}/{cleaned_id}"
-
-    # def add_source_metadata(self):
-    #     for doc in self.documents:
-    #         source_url = self.get_source_url(doc.metadata['page_id'])
-    #         doc.metadata['source'] = source_url
-    #         doc.metadata['title'] = source_url
-        
-            
+     
     def load_pages(self, page_ids: list):
         documents = self.reader.load_data(page_ids=page_ids)
         return documents
@@ -74,28 +63,4 @@ class NotionWorker(BaseWorker):
         if self.doc_format == 'langchain':
             self.documents = [doc.to_langchain_doc_format() for doc in self.documents]
         
-
-# if __name__ == '__main__':
-#     page_ids = [
-#         '7ab5d27093a647cbafedc0241e0d2d39', # Parent Product page
-#     ]
-        
-#     notion_worker = NotionWorker(
-#         token=os.getenv('NOTION_API_TOKEN'),
-#         base_url='https://notion.so/blackarrowai'
-#     )
-#     documents = notion_worker.load_documents(page_ids=page_ids)
-#     print(documents)
-
-#     answer = query_yes_no(f"Manually loading {len(documents)} Notion document. Continue?")
-
-#     if not answer:
-#         sys.exit()
-
-#     index_name = notion_worker.pinecone_index
-#     print(f"Writing to index {index_name}...")
-
-#     embedding_function = OpenAIEmbeddings(openai_api_key=os.getenv("OPENAI_API_KEY"))
-#     docsearch = Pinecone.from_documents(documents, embedding_function, index_name=index_name)
-#     print(f"...Done")
 

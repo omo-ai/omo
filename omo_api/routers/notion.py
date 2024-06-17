@@ -62,12 +62,20 @@ async def get_notion_pages(x_notion_authorization: Annotated[str, Header()],
     if x_notion_authorization.startswith('Bearer '):
         x_notion_authorization = x_notion_authorization.replace('Bearer ', '')
 
-    page_ids = [page['id'] for page in pages['results']]
+    page_metadata = [
+        (
+            page['id'], 
+            page['properties']['title']['title'][0]['plain_text'],
+            page['created_time'],
+            page['last_edited_time'], 
+            page['url'], 
+        ) for page in pages['results']
+    ]
 
-    task_payload = [(page, x_notion_authorization,) for page in page_ids]
+    task_payload = [(page, x_notion_authorization,) for page in page_metadata]
 
     notion_context.oauth_token = x_notion_authorization
-    notion_context.page_ids = page_ids
+    notion_context.pages = page_metadata
     db.add(notion_context)
     db.commit()
 

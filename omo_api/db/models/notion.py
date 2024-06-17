@@ -11,5 +11,5 @@ encryption_key = get_env_var('ENCRYPTION_KEY')
 
 class NotionConfig(CommonMixin, Base, TeamMixin):
     oauth_token: Mapped[str] = Column(EncryptedType(String, encryption_key))
-    page_ids: Mapped[ARRAY] = mapped_column(ARRAY(String), nullable=True)
-    database_ids: Mapped[ARRAY] = mapped_column(ARRAY(String), nullable=True)
+    pages: Mapped[ARRAY] = mapped_column(ARRAY(String), nullable=True)
+    databases: Mapped[ARRAY] = mapped_column(ARRAY(String), nullable=True)
