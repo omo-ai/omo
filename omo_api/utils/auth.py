@@ -18,6 +18,7 @@ from google.auth.transport import requests
 from fastapi_nextauth_jwt import NextAuthJWT
 
 from omo_api.utils import get_env_var
+from omo_api.utils.user import get_user_ctx
 from omo_api.db.utils import get_db
 from omo_api.db.models.user import User
 
@@ -118,6 +119,8 @@ async def user_from_jwt(jwt: Annotated[dict, Depends(JWT)],
 
     if user is None:
         raise credentials_exception
+
+    user.context = get_user_ctx(user)
 
     return user
 

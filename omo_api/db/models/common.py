@@ -1,5 +1,6 @@
 from sqlalchemy import DateTime, ForeignKey
 from sqlalchemy.sql import func
+from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import (
     Mapped, 
     mapped_column,
@@ -23,5 +24,9 @@ class CommonMixin:
     updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 class TeamMixin:
+
+    @declared_attr
+    def team(cls):
+        return relationship("Team")
 
     team_id: Mapped[int] = mapped_column(ForeignKey("team.id"), nullable=True)

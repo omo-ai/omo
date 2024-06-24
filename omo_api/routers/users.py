@@ -104,19 +104,6 @@ def create_vecstore_config(user: User, team: Team, db: Session = Depends(get_db)
     
     return vecstore_config, created
 
-def get_installed_connectors(user: User) -> dict:
-    installed_connectors = {
-        'connectors': []
-    }
-    for app in config['connectors']:
-        app_configs = getattr(user.team, f"{app}_configs", None)
-        # user has existing configs i.e. it's installed
-        if not app_configs:
-            continue
-
-        installed_connectors['connectors'].append({ 'name': app, 'id': [app_config.id for app_config in app_configs]})
-
-    return installed_connectors
 
 # def get_user_by_email(email: str, db: Session) -> User:
 #     try:
@@ -126,18 +113,7 @@ def get_installed_connectors(user: User) -> dict:
 #         raise HTTPException(status_code=404, detail="User not found")
 #     return user
 
-def get_vector_store_config(user: User) -> dict:
-    config = {}
-    vecstore = get_active_vector_store()['name']
-    keys = ['id', 'index_name', 'environment', 'namespaces', 'created_at', 'updated_at']
-    config['vector_store'] = {key: "" for key in keys}
-    config['vector_store']['provider'] = vecstore
 
-    vecstore_config = getattr(user.team, f"{vecstore}_configs")[0]
-    for key in keys:
-        config['vector_store'][key] = getattr(vecstore_config, key)
-
-    return config
 
 def get_user_team(user: User) -> dict:
     pass
@@ -165,18 +141,8 @@ async def me (user: Annotated[User, Depends(get_current_active_user)]):
 
 
 @router.get('/v1/me', response_model_exclude=['hashed_password', 'username', 'last_login'])
-async def get_user(user: Annotated[User, Depends(get_current_active_user)]) -> dict:
-    
-    user_dict = jsonable_encoder(user)
-    installed_apps_dict = get_installed_connectors(user)
-    vecstore_config_dict = get_vector_store_config(user)
-
-    response_dict = {}
-    response_dict.update(user_dict)
-    response_dict.update(installed_apps_dict)
-    response_dict.update(vecstore_config_dict)
-
-    return response_dict
+async def get_user_context(user: Annotated[User, Depends(get_current_active_user)]) -> dict:
+    return jsonable_encoder(user)
 
 
 @router.post('/v2/users/register')
