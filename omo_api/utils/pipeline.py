@@ -145,7 +145,7 @@ def get_pipeline(documents: List[Document], vectore_index: str, namespace: str):
     #Settings.text_splitter = SentenceSplitter()
 
     pipeline = SentenceWindowPipeline(
-        docs=flatten_list(documents),
+        docs=documents,
         transforms=[
             # SentenceSplitter(),
             get_embedding_model(),
