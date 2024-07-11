@@ -1,6 +1,7 @@
 import logging
 import requests
 from typing import Annotated
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from fastapi import APIRouter, Depends, Header, HTTPException
@@ -25,6 +26,7 @@ def get_notion_context(user: User = Depends(get_current_active_user),
 @router.post('/v1/notion/pages')
 async def get_notion_pages(x_notion_authorization: Annotated[str, Header()],
                            notion_context = Depends(get_notion_context),
+                           user: User = Depends(get_current_active_user),
                            db: Session = Depends(get_db)) -> dict:
     """
     Retrieves Notion pages based on the provided authorization token.
@@ -72,7 +74,10 @@ async def get_notion_pages(x_notion_authorization: Annotated[str, Header()],
         ) for page in pages['results']
     ]
 
-    task_payload = [(page, x_notion_authorization,) for page in page_metadata]
+    task_payload = [
+        (jsonable_encoder(user), page, x_notion_authorization,)
+        for page in page_metadata
+    ]
 
     notion_context.oauth_token = x_notion_authorization
     notion_context.pages = page_metadata
@@ -82,6 +87,7 @@ async def get_notion_pages(x_notion_authorization: Annotated[str, Header()],
     chunk_size = 2
 
     task_result = tasks.sync_notion_pages.chunks(task_payload, chunk_size).apply_async()
+    
     task_result.save()
 
     return response.json()
