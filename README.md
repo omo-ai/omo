@@ -58,7 +58,7 @@ The data sources that you can connect are known as Connectors. Supported Connect
 
 All connectors are self-service configured via a UI. We'd like to support the 
 widest catalog of Connectors. If you'd like to contribute a connector,
-please read our Contribution Guide, or if you need a custom connector
+please read our [contribution guidelines](CONTRIBUTING.md), or if you need a custom connector
 please contact us.
 
 
