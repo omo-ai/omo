@@ -1,5 +1,0 @@
-fastapi==0.104.1
-uvicorn==0.23.2
-SQLAlchemy==2.0.23
-sqlalchemy-utils==0.41.1
-alembic==1.13.0
