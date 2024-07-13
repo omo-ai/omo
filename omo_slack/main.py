@@ -4,7 +4,7 @@ import json
 import requests
 import logging
 from logging.config import dictConfig
-from omo_ws.conf.log import log_config
+from omo_slack.conf.log import log_config
 from omo_api.models.slack import SlackMessagePayload
 from fastapi import FastAPI
 from slack_bolt import App

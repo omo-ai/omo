@@ -83,22 +83,22 @@ services:
       - redis
 
   
-  websockets:
-    hostname: omo_ws_1
-    container_name: omo_ws_1
+  slack_websockets:
+    hostname: omo_slack_1
+    container_name: omo_slack_1
     profiles:
       - donotstart # comment out if you want to start this service
     build:
-      context: ./omo_ws
+      context: ./omo_slack
       dockerfile: Dockerfile
     platform: linux/amd64
     ports:
       - 8001:80
     volumes:
-      - ./omo_ws:/var/www/omo_ws
+      - ./omo_slack:/var/www/omo_slack
       - ./omo_api:/var/www/omo_api
     env_file:
-      - ./omo_ws/conf/envs/.env.development
+      - ./omo_slack/conf/envs/.env.development
     environment:
       PYTHONPATH: "$${PYTHONPATH}:/var/www" # for absolute imports
       PORT: 8001

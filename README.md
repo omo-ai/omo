@@ -43,7 +43,6 @@ Docs: [https://docs.helloomo.ai](https://docs.helloomo.ai)
 | Search contexts | Search personal and org wide Connectors ||✅||
 | Multi-modal support | Voice and image support ||✅||
 
-For items on the roadmap, please visit our Issues tab
 
 ## Connectors
 
