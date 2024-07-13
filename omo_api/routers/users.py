@@ -11,7 +11,7 @@ from fastapi.encoders import jsonable_encoder
 from slugify import slugify
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import NoResultFound
+from sqlalchemy.exc import NoResultFound, MultipleResultsFound
 from omo_api.db.utils import get_db, get_or_create
 from omo_api.models.user import UserAccountRegistration
 from omo_api.db.models.chat import Chat
@@ -135,20 +135,32 @@ def get_chat_by_user_id(db: Session, user_id: str) -> Optional[Chat]:
 ## Routes ##
 ############
 
-@router.get('/v1/whoami')
-async def me (user: Annotated[User, Depends(get_current_active_user)]):
+@router.get('/v1/whoami', tags=["user"])
+async def whoami(user: Annotated[User, Depends(get_current_active_user)]):
+    """
+    Return the authenticated user's email address
+    """
     return { 'email': user.email }
 
 
-@router.get('/v1/me', response_model_exclude=['hashed_password', 'username', 'last_login'])
-async def get_user_context(user: Annotated[User, Depends(get_current_active_user)]) -> dict:
+@router.get('/v1/me', 
+            tags=["user"],
+            response_model_exclude=['hashed_password', 'username', 'last_login'])
+async def me(user: Annotated[User, Depends(get_current_active_user)]) -> dict:
+    """
+    Return the authenticated user's context
+    """
     return jsonable_encoder(user)
 
 
-@router.post('/v2/users/register')
+@router.post('/v2/users/register', tags=["user"])
 async def register_user(account: UserAccountRegistration,
                         response: Response,
                         db: Session = Depends(get_db)) -> dict:
+    """
+    Create a User. The endpoint also creates an Account, Team, and vector store
+    configs associated with the user.
+    """
 
     user, user_created = create_user(account.email, db)
     account, account_created = create_account(user, account, db)
@@ -160,9 +172,12 @@ async def register_user(account: UserAccountRegistration,
     } 
     return response
 
-@router.get('/v1/users/connectors')
+@router.get('/v1/users/connectors', tags=["user"])
 async def get_connector_status(user: Annotated[dict, Depends(get_current_active_user)],
                                db: Session = Depends(get_db)) -> dict:
+    """
+    Get the connector statuses for a user
+    """
     
     # TODO the connector column may have a connector that was deleted at some
     # later point in time. leading to a nonexistent connector id
@@ -213,8 +228,14 @@ async def get_connector_status(user: Annotated[dict, Depends(get_current_active_
     return { 'statuses': statuses }
 
 
-@router.get("/v1/users/{user_id}/chats/")
-async def get_chat_for_user(user_id: str, db: Session = Depends(get_db)):
+# TODO this needs to be authenticated
+@router.get("/v1/users/{user_id}/chats/", tags=["user"])
+async def get_chat_history(
+    user_id: str, 
+    db: Session = Depends(get_db)):
+    """
+    Get the chats history for a user
+    """
     try:
         chat = get_chat_by_user_id(db, user_id)
         if chat is None:

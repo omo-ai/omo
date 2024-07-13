@@ -85,8 +85,11 @@ def create_slack_profile(db: Session,
 
     return slack_user_profile or False
 
-@router.post('/v1/user/register')
+@router.post('/v1/user/register', tags=["auth"], deprecated=True)
 async def register_user(user: UserRegistration, db: Session = Depends(get_db)):
+    """
+    Create a user with a registration form
+    """
 
     user_attr = {
         'email': user.email,
@@ -121,8 +124,11 @@ async def register_user(user: UserRegistration, db: Session = Depends(get_db)):
 
     return response_msg
 
-@router.post('/v1/user/login', response_model=Token)
+@router.post('/v1/user/login', response_model=Token, tags=["auth"], deprecated=True)
 async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: Session = Depends(get_db)):
+    """
+    Login a user with username and password and generate an access token
+    """
     user = authenticate_user(form_data.username, form_data.password, db)
 
     if not user:
@@ -154,8 +160,15 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
 #       "authorization":"Basic ***REMOVED***"
 #   }
 # } 
-@router.post('/v1/oauth-proxy/token')
-async def oauth_proxy(payload: OAuthProxyRequest):
+@router.post('/v1/oauth-proxy/token', tags=["auth"])
+async def oauth_proxy(payload: OAuthProxyRequest) -> dict:
+    """
+    This endpoint should be used to make proxy requests on behalf of a client
+    to a third party API in order to obtain an access token.
+    For example, the Notion API doesn't allow browsers to obtain access
+    tokens, so the client (browser) makes a call to this endpoint,
+    which will obtain the access token.
+    """
     final_headers = {
         'Accept': payload.headers.accept,
         'Content-Type': payload.headers.content_type,
@@ -169,7 +182,6 @@ async def oauth_proxy(payload: OAuthProxyRequest):
     )
     response_dict = response.json()
 
-    # Save the access token to DB
     access_token = response_dict['access_token']
 
     return { 'access_token': access_token }

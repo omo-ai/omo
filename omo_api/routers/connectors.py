@@ -42,7 +42,7 @@ def get_google_drive_connector(db: Session, user: User, connector_id: str):
 
     return response 
 
-@router.get('/v1/connectors/{connector_slug}/{connector_id}') 
+@router.get('/v1/connectors/{connector_slug}/{connector_id}', tags=["connector"]) 
 async def get_connector_by_id(connector_slug: str,
                               connector_id: str,
                               db: Session = Depends(get_db),

@@ -14,7 +14,7 @@ class AtlassianConfigModel(BaseModel):
     atlassianUsername: str
     confluenceSpaceKey: str
 
-@router.post('/v1/confluence/config')
+@router.post('/v1/confluence/config', tags=["confluence"])
 async def save_atlassian_config(config: AtlassianConfigModel, db: Session = Depends(get_db)):
     conf = {
         'api_key': config.atlassianApiToken,
@@ -37,6 +37,6 @@ async def save_atlassian_config(config: AtlassianConfigModel, db: Session = Depe
 
     logger.debug('saved space')
 
-@router.get('/v1/confluence/documents')
-async def get_confluence_documents(db: Session = Depends(get_db)):
-    pass
+@router.get('/v1/confluence/documents', tags=["confluence"])
+async def get_documents(db: Session = Depends(get_db)):
+    raise NotImplementedError

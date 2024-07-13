@@ -12,20 +12,24 @@ from omo_api.db.models.user import UserCeleryTasks
 from omo_api.db.utils import get_db
 from omo_api.config import Connector
 
-# since environment variable it's a relative to the root of the project, not this file
-os.environ['GOOGLE_ACCOUNT_FILE'] = './routers/google_service_key.json'
 
 logger = logging.getLogger(__name__) 
 
 router = APIRouter()
 
-# TODO requires authentication
-@router.post('/v2/googledrive/files')
-async def process_gdrive_files(files: List[GoogleDriveObject],
-                               user_context: UserContext,
-                               x_google_authorization: Annotated[str, Header()],
-                               db: Session = Depends(get_db)):
+@router.post('/v2/googledrive/files', tags=["google_drive"])
+async def index_google_drive_files(
+        files: List[GoogleDriveObject],
+        user_context: UserContext,
+        x_google_authorization: Annotated[str, Header(
+            description="Google access token. Obtained by the client \
+            performing the OAuth flow with Google."
+        )],
+        db: Session = Depends(get_db)) -> dict:
 
+    """
+    Indexes Google Drive files by passing them to Celery for processing
+    """
     logger.debug('Submitting celery job')
 
     chunk_size = 2

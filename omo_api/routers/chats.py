@@ -25,10 +25,13 @@ def get_chats_for_user(db: Session, user_id: str, limit=CHAT_HISTORY_LIMIT):
             .all()
     return result
 
-@router.get("/v1/chats/{chat_id}")
+@router.get("/v1/chats/{chat_id}", tags=["chat"])
 async def get_chat_by_id(chat_id: str,
                          db: Session = Depends(get_db),
                          user: User = Depends(get_current_active_user)):
+    """
+    Get a user's chat given a chat ID
+    """
 
     chat = db.query(Chat).filter(Chat.chat_id == chat_id, Chat.user_id == user.id).one_or_none()
 
@@ -43,11 +46,13 @@ async def get_chat_by_id(chat_id: str,
 
 
 
-@router.put('/v1/chats/{chat_id}')
+@router.put('/v1/chats/{chat_id}', tags=["chat"])
 async def put_chat(payload: ChatPayload,
                    db: Session = Depends(get_db),
                    user: User = Depends(get_current_active_user)):
-    
+    """
+    Save s user's chat into the chat history.
+    """
     chat_kwargs = {
         'user_id': user.id,
         'chat_id': payload.chat_id,
@@ -69,9 +74,12 @@ async def put_chat(payload: ChatPayload,
 
     return chat
 
-@router.get("/v1/chats/")
+@router.get("/v1/chats/", tags=["chat"])
 async def get_user_chats(user: User = Depends(get_current_active_user),
                          db: Session = Depends(get_db)) -> list[ChatHistoryResponseModel]:
+    """
+    Get the authenticated user's chat history
+    """
 
     chats = get_chats_for_user(db, user.id)
 

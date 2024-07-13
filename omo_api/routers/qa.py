@@ -188,9 +188,12 @@ def sources_from_response(response) -> list:
 
     return sources_list
 
-@router.post('/v1/chat/')
+@router.post('/v1/chat/', tags=["question_and_answering"])
 async def answer_web(message: MessageUserContext,
                      user: User = Depends(get_current_active_user)):
+    """
+    Answer a user question or prompt and stream the response
+    """
 
     return StreamingResponse(answer_question_stream(message, user),
                              media_type="application/json")

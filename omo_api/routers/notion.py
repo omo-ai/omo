@@ -23,7 +23,7 @@ def get_notion_context(user: User = Depends(get_current_active_user),
     return context 
 
     
-@router.post('/v1/notion/pages')
+@router.post('/v1/notion/pages', tags=["notion"])
 async def get_notion_pages(x_notion_authorization: Annotated[str, Header()],
                            notion_context = Depends(get_notion_context),
                            user: User = Depends(get_current_active_user),

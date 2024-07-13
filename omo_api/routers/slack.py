@@ -57,18 +57,18 @@ bolt_app_handler = SlackRequestHandler(bolt_app)
 
 router = APIRouter()
 
-@router.get("/slack/install")
+@router.get("/slack/install", tags=["slack"])
 async def install(req: Request):
     """
     Visit $API_HOST/slack/install in a browser to directly install slack
     """
     return await bolt_app_handler.handle(req)
 
-@router.get("/slack/oauth_redirect")
+@router.get("/slack/oauth_redirect", tags=["slack"])
 async def oauth_redirect(req: Request):
     return await bolt_app_handler.handle(req)
 
-@router.post("/v1/slack/message")
+@router.post("/v1/slack/message", tags=["slack"])
 async def endpoint(req: Request):
     return await bolt_app_handler.handle(req)
 
@@ -118,7 +118,7 @@ def create_slack_response(answer, sources) -> list:
     
     return slack_blocks_template
 
-@router.post('/v1/slack/answer')
+@router.post('/v1/slack/answer', tags=["question_and_answering"])
 async def answer_slack(body: SlackMessagePayload,
                        user_context: Annotated[dict, Depends(get_slack_user_context)]):
     start = time.time()
