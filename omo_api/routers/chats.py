@@ -26,7 +26,7 @@ def get_chats_for_user(db: Session, user_id: str, limit=CHAT_HISTORY_LIMIT):
     return result
 
 @router.get("/v1/chats/{chat_id}", tags=["chat"])
-async def get_chat_by_id(chat_id: str,
+async def by_id(chat_id: str,
                          db: Session = Depends(get_db),
                          user: User = Depends(get_current_active_user)):
     """

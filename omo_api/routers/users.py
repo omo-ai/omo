@@ -127,10 +127,6 @@ def get_user_files(user_id: int, connector_slug: str, db: Session):
     
     return []
 
-def get_chat_by_user_id(db: Session, user_id: str) -> Optional[Chat]:
-    result = db.query(Chat).filter(Chat.user_id == user_id).one_or_none()
-    return result
-
 ############
 ## Routes ##
 ############
@@ -226,20 +222,3 @@ async def get_connector_status(user: Annotated[dict, Depends(get_current_active_
             logger.error(f"Exception fetching user_id {user.id} connectors: {e}")
 
     return { 'statuses': statuses }
-
-
-# TODO this needs to be authenticated
-@router.get("/v1/users/{user_id}/chats/", tags=["user"])
-async def get_chat_history(
-    user_id: str, 
-    db: Session = Depends(get_db)):
-    """
-    Get the chats history for a user
-    """
-    try:
-        chat = get_chat_by_user_id(db, user_id)
-        if chat is None:
-            raise HTTPException(status_code=404, detail="Chat not found")
-        return chat
-    except MultipleResultsFound:
-        raise HTTPException(status_code=400, detail="Multiple chats found for this user")
