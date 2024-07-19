@@ -4,5 +4,4 @@ __pycache__/
 .env
 .env.*
 .credentials
-envs/
 .vscode

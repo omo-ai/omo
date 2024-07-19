@@ -98,7 +98,7 @@ services:
       - ./omo_slack:/var/www/omo_slack
       - ./omo_api:/var/www/omo_api
     env_file:
-      - ./omo_slack/conf/envs/.env.development
+      - ./omo_slack/envs/.env.development
     environment:
       PYTHONPATH: "$${PYTHONPATH}:/var/www" # for absolute imports
       PORT: 8001
