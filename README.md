@@ -1,4 +1,7 @@
 
+![Omo chat window](https://github.com/omo-ai/docs/blob/main/images/repo-hero.gif)
+
+![Omo connectors](https://github.com/omo-ai/docs/blob/main/images/repo-connectors.png)
 
 Omo is an open-source, AI-native enterprise search platform that allows you connect and chat with data sources such as Google Drive, Notion, Confluece, and more.
 Our goal is to build an LLM and vector store agnostic generative AI search platform that can power search and Q&A use cases such as
