@@ -18,7 +18,7 @@ from omo_api.utils import flatten_list
 logger = get_task_logger(__name__) 
 
 @celery.task(bind=True)
-def sync_google_drive(self, file: dict, user_context: dict, access_token: str):
+def sync_google_drive(self, file: dict, user: dict, access_token: str):
 
     def update_db(file: dict, user_ctx: UserContext):
         # files_dict = {f['id']: f for f in files}
@@ -40,7 +40,7 @@ def sync_google_drive(self, file: dict, user_context: dict, access_token: str):
     # self.update_state(task_id=self.request.id, state=TaskStates.PROGRESS.value)
 
     loader = GoogleDriveReaderOAuthAccessToken(access_token=access_token)
-    context = UserContext(**user_context)
+    context = UserContext(**user['context'])
 
     logger.info(f"indexing for user: {context.email}...")
 
@@ -57,7 +57,7 @@ def sync_google_drive(self, file: dict, user_context: dict, access_token: str):
             num_workers=num_workers,
         )
         all_docs.append(folder_docs)
-    elif file_type == 'file':
+    elif file_type in ('file', 'document'):
         docs = loader.load_data(
             file_ids=[file['id']],
             num_workers=num_workers,
@@ -80,7 +80,9 @@ def sync_google_drive(self, file: dict, user_context: dict, access_token: str):
     namespace = context.vector_store.namespaces[0] # currently user only has one namespace
     logger.info(f"...writing to index:namespace {index}:{namespace}")
 
-    pipeline, vecstore, docstore, cache = get_pipeline(all_docs, index, namespace)
+    documents = flatten_list(all_docs)
+
+    pipeline, vecstore, docstore, cache = get_pipeline(documents, index, namespace)
 
     # anything > 1 daemonic processes are not allowed to have children
     # seems to be becauase celery uses a custom implementatio of multiprocessing

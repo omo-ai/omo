@@ -122,9 +122,14 @@ class SentenceWindowPipeline:
 
     def run(self, num_workers: int = 4):
         try:
+            if not self.docs:
+                raise ValueError('Pipeline has no documents to run')
+            
+            logger.debug("running pipeline with %d docs" % len(self.docs))
+
             nodes = self.pipeline.run(documents=self.docs, num_workers=num_workers)
             self.nodes = nodes
-            return nodes
+            return self.nodes
         except Exception as e:
             logger.error(f"***Exception indexing documents: {e}***")
 
@@ -162,6 +167,7 @@ def get_pipeline(documents: List[Document], vectore_index: str, namespace: str):
         
     )
     logger.info(f"got pipeline")
+    logger.info(len(pipeline.docs))
     return pipeline, vecstore, docstore, ingestion_cache
 
 def write_nodes_to_vecstore(nodes, vector_store):

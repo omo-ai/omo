@@ -10,6 +10,7 @@ class GoogleDriveObject(BaseModel):
     name: str           # filename
     description: str    # file description
     type: str           # file type (folder, document)
+    mimetype: str       # e.g. application/vnd.google-apps.folder
     lastEditedUtc: int  # timestamp in milliseconds since epoch
     url: str            # url to file
     sizeBytes: int      # filesize
