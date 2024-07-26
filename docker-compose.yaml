@@ -82,6 +82,21 @@ services:
     depends_on:
       - redis
 
+  frontend:
+    hostname: omo_ui_1
+    container_name: omo_ui_1
+    platform: linux/amd64
+    build:
+      context: ./omo_ui
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./omo_ui/:/app
+    env_file:
+      ./omo_ui/.env.local
+    depends_on:
+      - server
   
   slack_websockets:
     hostname: omo_slack_1
