@@ -98,10 +98,10 @@ export const NotionConnector = () => {
 
 
     const proxyEndpoint = buildApiUrl('/v1/oauth-proxy/token');
-    const { data, error } = useSWR(code && authUrl && !accessToken ? proxyEndpoint : null, accessTokenFetcher);
+    const { data: tokenData, error: tokenError } = useSWR(code && authUrl && !accessToken ? proxyEndpoint : null, accessTokenFetcher);
 
     const pagesEndpoint = buildApiUrl('/v1/notion/pages');
-    const { data2, error2 } = useSWR(accessToken ? pagesEndpoint : null, pagesFetcher);
+    const { data: pageData, error: pageError } = useSWR(accessToken ? pagesEndpoint : null, pagesFetcher);
 
     return (
         <div className="p-10 md:pt-5 md:px-6 md:pb-10">
