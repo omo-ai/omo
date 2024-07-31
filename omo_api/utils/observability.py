@@ -1,6 +1,9 @@
 import os
+import logging
 import sentry_sdk
 from omo_api.utils import get_env_var
+
+logger = logging.getLogger()
 
 def configure_apm() -> None:
     APM_PROVIDER = os.environ.get('APM_PROVIDER', None)
@@ -9,7 +12,7 @@ def configure_apm() -> None:
 
         SENTRY_DSN = get_env_var('SENTRY_DSN')
 
-        print('INITING SDFDK')
+        logger.info('Initializing APM: Sentry')
         sentry_sdk.init(
             dsn=SENTRY_DSN,
             # Set traces_sample_rate to 1.0 to capture 100%

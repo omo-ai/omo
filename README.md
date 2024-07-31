@@ -64,3 +64,7 @@ All connectors are self-service configured via a UI. We'd like to support the
 widest catalog of Connectors. If you'd like to contribute a connector,
 please read our [contribution guidelines](CONTRIBUTING.md), or if you need a custom connector
 please contact us.
+
+## Contacting Us
+
+If you would like to reach out to us, feel free to email founders@helloomo.ai or DM me [@_chrishan](https://x.com/_chrishan) on X.
