@@ -97,8 +97,7 @@ const ChatInput = ({
         const msgPayload = { 
             "chat_id": chatId,
             "content": message, 
-            "role": "human", 
-            "user_context": omoUser
+            "role": "human" 
         }
         await fetch(url, {
             method: "POST",

@@ -20,7 +20,7 @@ from llama_index.vector_stores.pinecone import PineconeVectorStore
 # from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 # from langchain.docstore.document import Document
 from omo_api.db.models import User, Chat
-from omo_api.models.chat import Message, MessageUserContext
+from omo_api.models.chat import Message
 from omo_api.utils.pipeline import (
     get_chat_model, 
     get_embedding_model,
@@ -189,7 +189,7 @@ def sources_from_response(response) -> list:
     return sources_list
 
 @router.post('/v1/chat/', tags=["question_and_answering"])
-async def answer_web(message: MessageUserContext,
+async def answer_web(message: Message,
                      user: User = Depends(get_current_active_user)):
     """
     Answer a user question or prompt and stream the response
@@ -199,7 +199,7 @@ async def answer_web(message: MessageUserContext,
                              media_type="application/json")
 
 
-async def answer_question_stream(message: MessageUserContext, user: User):
+async def answer_question_stream(message: Message, user: User):
 
     # these will be used to append to the chat's history
     question_dict = {
@@ -214,7 +214,6 @@ async def answer_question_stream(message: MessageUserContext, user: User):
     }
 
     question = message.content
-    user_context = message.user_context
     chat_id = message.chat_id
 
     llm = get_chat_model()
@@ -226,13 +225,13 @@ async def answer_question_stream(message: MessageUserContext, user: User):
 
     vector_store = get_vector_store(
         pc_api_key,
-        user_context.vector_store.index_name,
-        user_context.vector_store.namespaces[0]
+        user.context['vector_store']['index_name'],
+        user.context['vector_store']['namespaces'][0],
     )
 
     index = VectorStoreIndex.from_vector_store(vector_store)
 
-    chat_store, chat_memory = get_chat_memory(username=user_context.email)
+    chat_store, chat_memory = get_chat_memory(username=user.email)
 
     # default 3000 token memory
     chat_engine = index.as_chat_engine(
@@ -260,48 +259,3 @@ async def answer_question_stream(message: MessageUserContext, user: User):
 
     # append the question and answer to the chat's history
     append_to_chat_history(chat_id, user, question_dict, answer_dict)
-
-
-# def answer_question(question: str, context: dict) -> dict:
-
-#     # tmp overrides for ***REMOVED*** 
-#     #os.environ['PINECONE_API_KEY'] = "***REMOVED***"
-#     # pinecone_index = "***REMOVED***"
-#     # pinecone_ns = "***REMOVED***"
-    
-#     os.environ['PINECONE_API_KEY'] = "***REMOVED***"
-#     os.environ['PINECONE_ENV'] = 'gcp-starter'
-#     # pinecone_index = context['omo_pinecone_index']
-#     pinecone_index = 'starter_index'
-#     pinecone_ns = 'default'
-    
-
-#     embedding_function = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
-#     docsearch = PineconeVectorStore.from_existing_index(pinecone_index,
-#                                                         embedding_function,)
-#     retriever = docsearch.as_retriever()
-
-#     llm = ChatOpenAI(model_name="gpt-4-turbo-preview", temperature=0, openai_api_key=OPENAI_API_KEY)
-
-#     qa_chain = load_qa_with_sources_chain(llm=llm, chain_type='stuff')
-
-#     qa = RetrievalQAWithSourcesChain(
-#         combine_documents_chain = qa_chain,
-#         retriever = retriever,
-#         return_source_documents=True
-#     )
-
-#     answer_response = qa({ 'question': question }, return_only_outputs=False)
-
-#     final_answer = {}
-    
-#     if answer_response['sources']:
-#         sources = extract_sources(answer_response['source_documents'])
-#     else:
-#         sources = ''
-    
-#     final_answer['question'] = answer_response['question']
-#     final_answer['answer'] = answer_response['answer']
-#     final_answer['sources'] = sources
-
-#     return final_answer

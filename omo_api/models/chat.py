@@ -9,13 +9,9 @@ class Message(BaseModel):
     timestamp: Optional[str] = None
     chat_id: Optional[str] = None
 
-class MessageUserContext(Message):
-    user_context: UserContext
-
 class ChatPayload(BaseModel):
     chat_id: str
     messages: List[Message]
-
 
 class ChatHistoryResponseModel(BaseModel):
     id: int

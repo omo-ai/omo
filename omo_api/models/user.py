@@ -74,7 +74,7 @@ class UserContext(BaseModel):
     is_active: bool
     team_id: int
     created_at: datetime
-    connectors: List[ConnectorContext]
-    vector_store: VectorStoreContext
+    connectors: Optional[List[ConnectorContext]] = None
+    vector_store: Optional[VectorStoreContext] = None
 
 
