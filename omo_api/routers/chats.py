@@ -38,8 +38,8 @@ async def by_id(chat_id: str,
     if chat is None:
         raise HTTPException(status_code=404, detail="Chat not found")
 
-    # retuen a list of flattened list for easier rendering on the frontend
-    chat.messages = flatten_list(chat.messages) 
+    # reshape chat.messages for cleaner response
+    chat.messages = [msg for chat in chat.messages for msg in chat] 
 
     return chat
 
