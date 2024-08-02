@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ECR_URL=187613313731.dkr.ecr.us-west-2.amazonaws.com
-TAG=v0.4.13
+TAG=v0.4.14
 
 
 function authenticate_image_registry() {

@@ -48,7 +48,7 @@ export default function LoginPage() {
                         Sign in to your account
                     </h2>
                     <p className="mt-2 mb-15 text-md leading-6 font-semibold text-indigo-600">
-                        Get started for free. No credit card required.
+                        Try it free for 14 days. No credit card required.
                     </p>
                     </div>
                 {/* <LoginTabGroup/> */}
