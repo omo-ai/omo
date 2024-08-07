@@ -154,10 +154,10 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
 # e.g. Notion
 # for notion, the shape of the payload from the client
 # { "endpoint":"https://api.notion.com/v1/oauth/token",
-#   "body":"grant_type=authorization_code&code=***REMOVED***&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fconnectors%2Fnotion",
+#   "body":"grant_type=authorization_code&code=XXX&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fconnectors%2Fnotion",
 #   "headers":{
 #       "content_type":"application/x-www-form-urlencoded",
-#       "authorization":"Basic ***REMOVED***"
+#       "authorization":"Basic XXXX"
 #   }
 # } 
 @router.post('/v1/oauth-proxy/token', tags=["auth"])
