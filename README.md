@@ -65,8 +65,10 @@ widest catalog of Connectors. If you'd like to contribute a connector,
 please read our [contribution guidelines](CONTRIBUTING.md), or if you need a custom connector
 please contact us.
 
-## Contact / Community
+## Contact 
 
 If you would like to reach out to us, feel free to email founders@helloomo.ai or DM me [@_chrishan](https://x.com/_chrishan) on X.
 
-We've also setup a new [Discord server](https://discord.gg/9hYw2ZuM) if you'd like to get community support.
+## Community
+
+A new [Discord server](https://discord.gg/9hYw2ZuM) is available if you'd like to get community support.
