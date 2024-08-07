@@ -32,10 +32,10 @@ const Profile = ({ visible }: ProfileProps) => (
                     <>
                         <div className="ml-4 mr-4">
                             <div className="base2 font-semibold text-n-1">
-                                Chris Han
+                                FirstName LasName
                             </div>
                             <div className="caption1 font-semibold text-n-3/50">
-                                ***REMOVED***
+                                firstname@example.com
                             </div>
                         </div>
                         {/* <div className="shrnik-0 ml-auto self-start px-3 bg-primary-2 rounded-lg caption1 font-bold text-n-7">

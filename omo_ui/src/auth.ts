@@ -104,12 +104,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         },
         async signIn({ account, profile, user }) {
           return true;
-          // if (profile?.email?.endsWith("@blackarrow.software") || 
-          //     profile?.email?.endsWith("@helloomo.ai") ||
-          //     profile?.email == "***REMOVED***") {
-          //     return true; // true allows the user to signin
-          // }
-          // return false;
         }
     }
 })
