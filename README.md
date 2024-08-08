@@ -25,7 +25,6 @@ Docs: [https://docs.helloomo.ai](https://docs.helloomo.ai)
 5. Cloud-agnostic: Run a self-hosted instance in your cloud
 6. Ensure data is secure and provie ability to host on-prem.
 
-
 ## Features / Roadmap
 
 | Feature | Description | Supported | Roadmap | Notes |
