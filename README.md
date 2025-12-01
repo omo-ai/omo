@@ -12,9 +12,7 @@ Our goal is to build an LLM and vector store agnostic generative AI search platf
 
 Omo is licensed under Apache 2.0.
 
-A fully-managed, hosted version is available [here](https://helloomo.ai).
-
-Docs: [https://docs.helloomo.ai](https://docs.helloomo.ai)
+Docs: [https://github.com/omo-ai/docs](https://github.com/omo-ai/docs)
 
 ## Design goals
 
@@ -66,8 +64,4 @@ please contact us.
 
 ## Contact 
 
-If you would like to reach out to us, feel free to email founders@helloomo.ai or DM me [@_chrishan](https://x.com/_chrishan) on X.
-
-## Community
-
-A new [Discord server](https://discord.gg/9hYw2ZuM) is available if you'd like to get community support.
+If you have general questions, please create a Discussion thread and I'll try to respond ASAP.
