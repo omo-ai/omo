@@ -12,7 +12,7 @@ Our goal is to build an LLM and vector store agnostic generative AI search platf
 
 Omo is licensed under Apache 2.0.
 
-Docs: [https://github.com/omo-ai/docs](https://github.com/omo-ai/docs)
+[https://omo-3bacc298.mintlify.app/](Documentation)
 
 ## Design goals
 
